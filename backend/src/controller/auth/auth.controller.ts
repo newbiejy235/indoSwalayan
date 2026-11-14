@@ -274,8 +274,8 @@ export class Authentication {
           nama_belakang: tryLogin.first_name,
           no_telp: tryLogin.phone_number,
           code_kaaryawan: tryLogin.code,
-          token: token,
         },
+        token: token,
       });
     } catch (error) {
       if (error instanceof ZodError) {
