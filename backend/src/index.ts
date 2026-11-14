@@ -1,4 +1,6 @@
 import express from "express";
+import auth from "./routes/auth.routes";
+
 import cors from "cors";
 
 const app = express();
@@ -10,6 +12,7 @@ app.use(
   }),
 );
 app.use(express.json());
+app.use("/auth", auth);
 
 app.get("/", (req, res) => {
   res.send("Hello Express + TypeScript!");

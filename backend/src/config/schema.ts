@@ -16,29 +16,38 @@ import {
 
 export const role = pgEnum("role", ["pemilik", "kasir"]);
 
-export const usersTable = pgTable("users", {
-  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar({ length: 30 }).notNull(),
-  email: varchar({ length: 30 }).notNull().unique(),
-  password: varchar({ length: 50 }).notNull(),
-  phone_number: varchar({ length: 15 }),
-  role: role().notNull().default("pemilik"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow()
-    .$onUpdate(() => new Date()),
-});
+export const usersTable = pgTable(
+  "users",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+    name: varchar({ length: 30 }).notNull(),
+    email: varchar({ length: 30 }).notNull().unique(),
+    password: varchar({ length: 255 }).notNull(),
+    phone_number: varchar({ length: 15 }),
+    role: role().notNull().default("pemilik"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    // Membatasi hanya boleh ada 1 baris dengan role = 'pemilik'
+    uniqueIndex("users_single_pemilik_idx")
+      .on(table.role)
+      .where(sql`${table.role} = 'pemilik'`),
+  ],
+);
 
 export const karyawan = pgTable("karyawan", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  code : varchar({length : 30}).notNull(),
+  code: varchar({ length: 30 }).notNull(),
   first_name: varchar({ length: 30 }).notNull(),
   last_name: varchar({ length: 30 }).notNull(),
   email: varchar({ length: 30 }).notNull().unique(),
-  password: varchar({ length: 50 }).notNull(),
+  password: varchar({ length: 255 }).notNull(),
   phone_number: varchar({ length: 15 }),
   role: role().notNull().default("kasir"),
 });
