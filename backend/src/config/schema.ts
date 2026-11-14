@@ -17,7 +17,7 @@ import {
 export const role = pgEnum("role", ["pemilik", "kasir"]);
 
 export const usersTable = pgTable("users", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar({ length: 30 }).notNull(),
   email: varchar({ length: 30 }).notNull().unique(),
   password: varchar({ length: 50 }).notNull(),
@@ -33,7 +33,8 @@ export const usersTable = pgTable("users", {
 });
 
 export const karyawan = pgTable("karyawan", {
-  id: integer().primaryKey().generatedAlwaysAsIdentity(),
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  code : varchar({length : 30}).notNull(),
   first_name: varchar({ length: 30 }).notNull(),
   last_name: varchar({ length: 30 }).notNull(),
   email: varchar({ length: 30 }).notNull().unique(),
@@ -45,7 +46,7 @@ export const karyawan = pgTable("karyawan", {
 export const products = pgTable(
   "products",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
     name: varchar("name", { length: 150 }).notNull(),
 
@@ -108,9 +109,9 @@ export const saleStatusEnum = pgEnum("sales_status", [
 export const sales = pgTable(
   "sales",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-    cashierId: uuid("cashier_id")
+    cashierId: integer("cashier_id")
       .notNull()
       .references(() => karyawan.id, {
         onDelete: "restrict",
@@ -164,18 +165,17 @@ export const sales = pgTable(
 export const invoice = pgTable(
   "invoice",
   {
-    id: uuid("id").defaultRandom().primaryKey(),
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 
-    saleId: uuid("sale_id")
+    saleId: integer("sale_id")
       .notNull()
       .references(() => sales.id, {
         onDelete: "restrict",
       }),
 
-    productId: uuid("product_id")
-      .references(() => products.id, {
-        onDelete: "set null",
-      }),
+    productId: integer("product_id").references(() => products.id, {
+      onDelete: "set null",
+    }),
 
     // Snapshot data produk saat transaksi.
     productName: varchar("product_name", {
@@ -203,9 +203,6 @@ export const invoice = pgTable(
 
     index("sale_items_product_idx").on(table.productId),
 
-    check(
-      "sale_items_quantity_positive",
-      sql`${table.quantity} > 0`
-    ),
-  ]
+    check("sale_items_quantity_positive", sql`${table.quantity} > 0`),
+  ],
 );
