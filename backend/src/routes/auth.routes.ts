@@ -1,7 +1,7 @@
 import { Router } from "express";
 import Authentication from "../controller/auth/auth.controller";
 import { authenticate } from "../middleware/users.middleware";
-import { loginLimiter } from "../middleware/authLimiter";
+import { loginLimiter } from "../middleware/Limiter";
 const router = Router();
 
 router.post("/login", loginLimiter, Authentication.login);

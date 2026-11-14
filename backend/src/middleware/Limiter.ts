@@ -21,3 +21,25 @@ export const loginLimiter = rateLimit({
     });
   },
 });
+
+export const requestOtpLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 3,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Terlalu banyak permintaan OTP. Coba lagi nanti.",
+  },
+});
+
+export const resetPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Terlalu banyak percobaan. Coba lagi nanti.",
+  },
+});
