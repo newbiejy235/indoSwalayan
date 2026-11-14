@@ -167,6 +167,10 @@ export const sales = pgTable(
       .notNull()
       .unique(),
 
+    productId: integer("product_id").references(() => products.id, {
+      onDelete: "set null",
+    }),
+
     subtotal: numeric("subtotal", {
       precision: 14,
       scale: 2,
