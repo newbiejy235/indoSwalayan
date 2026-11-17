@@ -16,6 +16,8 @@ router.post(
 
 router.get("/", Product.getAllProduct);
 
+router.patch("/:id",authenticate, isOwner, Product.editProduct);
+
 // kasir
 
 router.post("/sale", authenticate, management, Product.saleProduct);

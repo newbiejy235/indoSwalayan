@@ -4,11 +4,15 @@ import crypto from "node:crypto";
 
 import { db } from "../../config/db";
 import { products, sales } from "../../config/schema";
-import { createProductSchema } from "../../validation/product.vlidation";
+import {
+  createProductSchema,
+  editProductSchema,
+} from "../../validation/product.vlidation";
 import { AuthRequest } from "../../middleware/users.middleware";
 import { uploadProductPhoto } from "../../utils/cloudinaryUpload";
 import { salesSchema, scaner } from "../../validation/sales.validation";
 import { invoice } from "../../config/schema";
+import { ZodError } from "zod";
 
 const invoiceNumber = (): string => {
   return crypto.randomInt(100000, 1000000).toString();
@@ -100,7 +104,10 @@ export class Product {
 
   getAllProduct = async (req: AuthRequest, res: Response) => {
     try {
-      const product = await db.select().from(products);
+      const product = await db
+        .select()
+        .from(products)
+        .where(eq(products.isActive, true));
       if (product.length === 0) {
         return res.status(404).json({
           success: false,
@@ -111,9 +118,70 @@ export class Product {
       return res.status(200).json({
         success: true,
         message: "berhasil ambil data",
-        data: product
+        data: product,
       });
     } catch (error) {}
+  };
+
+  editProduct = async (req: Request, res: Response) => {
+    try {
+      const productId = Number(req.params.id);
+
+      // Validasi ID
+      if (!Number.isInteger(productId) || productId <= 0) {
+        res.status(400).json({
+          message: "ID produk tidak valid",
+        });
+        return;
+      }
+
+      // Validasi body
+      const validatedData = editProductSchema.parse(req.body);
+
+      // Pastikan ada atribut yang ingin diubah
+      if (Object.keys(validatedData).length === 0) {
+        res.status(400).json({
+          message: "Minimal ubah satu atribut produk",
+        });
+        return;
+      }
+
+      // Update produk
+      const [updatedProduct] = await db
+        .update(products)
+        .set({
+          ...validatedData,
+          updatedAt: new Date(),
+        })
+        .where(eq(products.id, productId))
+        .returning();
+
+      if (!updatedProduct) {
+        res.status(404).json({
+          message: "Produk tidak ditemukan",
+        });
+        return;
+      }
+
+      res.status(200).json({
+        message: "Produk berhasil diperbarui",
+        data: updatedProduct,
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({
+          message: "Validasi gagal",
+          errors: error.flatten().fieldErrors,
+        });
+        return;
+      }
+
+      console.error("EDIT PRODUCT ERROR:", error);
+
+      res.status(500).json({
+        message: "Terjadi kesalahan pada server",
+      });
+    }
   };
 
   saleProduct = async (req: AuthRequest, res: Response) => {

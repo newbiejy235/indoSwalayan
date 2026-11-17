@@ -20,7 +20,7 @@ export const editProductSchema = z
 
     barcode: z.string().trim().max(100).nullable().optional(),
 
-    price: z.coerce.number().finite().min(0, "tidak boleh kurang dari 0"),
+    isActive: z.boolean(),
 
     stock: z.coerce.number().int().min(0, "tidak boleh kurang dari 0"),
   })
