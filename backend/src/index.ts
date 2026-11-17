@@ -1,5 +1,7 @@
 import express from "express";
 import auth from "./routes/auth.routes";
+import resetPassword from "./routes/resetPassword.routes";
+import product from "./routes/product.routes";
 
 import cors from "cors";
 
@@ -13,6 +15,8 @@ app.use(
 );
 app.use(express.json());
 app.use("/auth", auth);
+app.use("/reset", resetPassword);
+app.use("/product", product);
 
 app.get("/", (req, res) => {
   res.send("Hello Express + TypeScript!");

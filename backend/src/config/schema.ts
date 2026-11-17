@@ -41,6 +41,41 @@ export const usersTable = pgTable(
   ],
 );
 
+export const passwordResetOtps = pgTable(
+  "password_reset_otps",
+  {
+    id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+
+    email: varchar("email", { length: 30 }).notNull(),
+
+    accountType: role("role").notNull(),
+
+    otpHash: varchar("otp_hash", { length: 64 }).notNull(),
+
+    expiresAt: timestamp("expires_at", {
+      withTimezone: true,
+    }).notNull(),
+
+    attempts: integer("attempts").default(0).notNull(),
+
+    usedAt: timestamp("used_at", {
+      withTimezone: true,
+    }),
+
+    createdAt: timestamp("created_at", {
+      withTimezone: true,
+    })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    index("password_reset_email_idx").on(table.email),
+    index("password_reset_expiry_idx").on(table.expiresAt),
+
+    check("password_reset_attempts_nonnegative", sql`${table.attempts} >= 0`),
+  ],
+);
+
 export const karyawan = pgTable("karyawan", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   code: varchar({ length: 30 }).notNull(),
@@ -131,6 +166,11 @@ export const sales = pgTable(
     })
       .notNull()
       .unique(),
+
+    productId: integer("product_id").references(() => products.id, {
+      onDelete: "set null",
+    }),
+
 
     subtotal: numeric("subtotal", {
       precision: 14,
