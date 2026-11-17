@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String _baseUrl = 'http://localhost:8000';
+  static const String _baseUrl = 'https://indo-swalayan.vercel.app';
   static const String _tokenKey = 'token';
 
   static Future<void> saveToken(String token) async {
