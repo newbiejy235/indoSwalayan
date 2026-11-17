@@ -21,6 +21,5 @@ router.patch("/:id",authenticate, isOwner, Product.editProduct);
 // kasir
 
 router.post("/sale", authenticate, management, Product.saleProduct);
-router.post("/scaner", authenticate, management, Product.scaner);
 
 export default router;

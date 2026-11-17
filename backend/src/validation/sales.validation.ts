@@ -4,7 +4,7 @@ export const salesSchema = z.object({
   items: z
     .array(
       z.object({
-        productId: z.coerce.number().int().positive(),
+        barcode: z.string(),
         quantity: z.coerce.number().int().min(1),
       }),
     )
@@ -14,7 +14,3 @@ export const salesSchema = z.object({
 
   paymentMethod: z.enum(["tunai", "non tunai"]),
 });
-
-export const scaner = z.object({
-  barcode : z.string()
-})

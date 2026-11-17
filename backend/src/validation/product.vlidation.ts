@@ -25,3 +25,5 @@ export const editProductSchema = z
     stock: z.coerce.number().int().min(0, "tidak boleh kurang dari 0"),
   })
   .partial();
+
+

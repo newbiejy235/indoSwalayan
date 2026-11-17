@@ -10,7 +10,7 @@ import {
 } from "../../validation/product.vlidation";
 import { AuthRequest } from "../../middleware/users.middleware";
 import { uploadProductPhoto } from "../../utils/cloudinaryUpload";
-import { salesSchema, scaner } from "../../validation/sales.validation";
+import { salesSchema } from "../../validation/sales.validation";
 import { invoice } from "../../config/schema";
 import { ZodError } from "zod";
 
@@ -146,13 +146,30 @@ export class Product {
         return;
       }
 
+      const [searchProduct] = await db
+        .select()
+        .from(products)
+        .where(eq(products.id, productId));
+
+      if (!searchProduct) {
+        res.status(404).json({
+          message: "Produk tidak ditemukan",
+        });
+        return;
+      }
+
+      const updatedData = {
+        ...validatedData,
+        ...(validatedData.stock !== undefined && {
+          stock: searchProduct.stock + validatedData.stock,
+        }),
+        updatedAt: new Date(),
+      };
+
       // Update produk
       const [updatedProduct] = await db
         .update(products)
-        .set({
-          ...validatedData,
-          updatedAt: new Date(),
-        })
+        .set(updatedData)
         .where(eq(products.id, productId))
         .returning();
 
@@ -175,8 +192,6 @@ export class Product {
         });
         return;
       }
-
-      console.error("EDIT PRODUCT ERROR:", error);
 
       res.status(500).json({
         message: "Terjadi kesalahan pada server",
@@ -208,13 +223,13 @@ export class Product {
         const [product] = await db
           .select()
           .from(products)
-          .where(eq(products.id, item.productId))
+          .where(eq(products.barcode, item.barcode))
           .limit(1);
 
         if (!product) {
           return res.status(404).json({
             success: false,
-            message: `Produk ID ${item.productId} tidak ditemukan`,
+            message: `Produk ${item.barcode} tidak ditemukan`,
           });
         }
 
@@ -288,12 +303,16 @@ export class Product {
 
       // 6. Kurangi stok produk
       for (const item of items) {
+        const [product] = await db
+          .select()
+          .from(products)
+          .where(eq(products.barcode, item.barcode));
         await db
           .update(products)
           .set({
             stock: sql`${products.stock} - ${item.quantity}`,
           })
-          .where(eq(products.id, item.productId));
+          .where(eq(products.id, product.id));
       }
 
       // 7. Response
@@ -329,53 +348,53 @@ export class Product {
     }
   };
 
-  scaner = async (req: AuthRequest, res: Response) => {
-    try {
-      const validation = scaner.parse(req.body);
-      const { barcode } = validation;
-      const [search] = await db
-        .select()
-        .from(products)
-        .where(and(eq(products.barcode, barcode), eq(products.isActive, true)));
+  // scaner = async (req: AuthRequest, res: Response) => {
+  //   try {
+  //     const validation = scaner.parse(req.body);
+  //     const { barcode } = validation;
+  //     const [search] = await db
+  //       .select()
+  //       .from(products)
+  //       .where(and(eq(products.barcode, barcode), eq(products.isActive, true)));
 
-      const name = search.name;
-      const sku = search.sku;
+  //     const name = search.name;
+  //     const sku = search.sku;
 
-      if (!search) {
-        return res.status(404).json({
-          success: false,
-          message: `barang dengan sku : ${sku} & name : ${name} tidak ditemukan`,
-        });
-      }
+  //     if (!search) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         message: `barang dengan sku : ${sku} & name : ${name} tidak ditemukan`,
+  //       });
+  //     }
 
-      return res.status(200).json({
-        success: true,
-        message: "data berhasil diambil",
-        data: {
-          id: search.id,
-          product: search.name,
-          SKU: search.sku,
-          price: search.price,
-          stock: search.stock,
-          img: search.imageUrl,
-        },
-      });
-    } catch (error: any) {
-      const dbError = error?.cause ?? error;
+  //     return res.status(200).json({
+  //       success: true,
+  //       message: "data berhasil diambil",
+  //       data: {
+  //         id: search.id,
+  //         product: search.name,
+  //         SKU: search.sku,
+  //         price: search.price,
+  //         stock: search.stock,
+  //         img: search.imageUrl,
+  //       },
+  //     });
+  //   } catch (error: any) {
+  //     const dbError = error?.cause ?? error;
 
-      if (dbError?.code === "23505") {
-        return res.status(409).json({
-          success: false,
-          message: "Nomor invoice sudah digunakan",
-        });
-      }
+  //     if (dbError?.code === "23505") {
+  //       return res.status(409).json({
+  //         success: false,
+  //         message: "Nomor invoice sudah digunakan",
+  //       });
+  //     }
 
-      return res.status(500).json({
-        success: false,
-        message: "Internal server error",
-      });
-    }
-  };
+  //     return res.status(500).json({
+  //       success: false,
+  //       message: "Internal server error",
+  //     });
+  //   }
+  // };
 }
 
 export default new Product();
