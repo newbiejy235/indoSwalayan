@@ -171,6 +171,7 @@ export const sales = pgTable(
       onDelete: "set null",
     }),
 
+
     subtotal: numeric("subtotal", {
       precision: 14,
       scale: 2,

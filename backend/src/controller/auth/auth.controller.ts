@@ -20,8 +20,6 @@ function generateSixDigitCode() {
   return code.toString();
 }
 
-console.log(generateSixDigitCode()); // Contoh output: "482910"
-
 dotenv.config();
 
 export class Authentication {
@@ -57,8 +55,6 @@ export class Authentication {
         message: "akun berhasil dibuat",
       });
     } catch (error: any) {
-      console.log(error);
-
       if (error instanceof ZodError) {
         return res.status(400).json({
           success: false,
