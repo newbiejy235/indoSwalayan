@@ -12,7 +12,7 @@ import { AuthRequest } from "../../middleware/users.middleware";
 import { uploadProductPhoto } from "../../utils/cloudinaryUpload";
 import { salesSchema } from "../../validation/sales.validation";
 import { invoice } from "../../config/schema";
-import { ZodError } from "zod";
+import { string, ZodError } from "zod";
 
 const invoiceNumber = (): string => {
   return crypto.randomInt(100000, 1000000).toString();
@@ -395,6 +395,51 @@ export class Product {
   //     });
   //   }
   // };
+  getProductByBarcode = async (req: Request, res: Response) => {
+    try {
+      const { barcode } = req.params;
+
+      if (!barcode || String(barcode).trim() === "") {
+        return res.status(400).json({
+          success: false,
+          message: "Barcode wajib diisi",
+        });
+      }
+
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(eq(products.barcode, String(barcode)))
+        .limit(1);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Produk tidak ditemukan",
+        });
+      }
+
+      if (!product.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "Produk sudah tidak aktif",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Produk berhasil ditemukan",
+        data: product,
+      });
+    } catch (error) {
+      console.error("Get Product By Barcode Error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  };
 }
 
 export default new Product();
