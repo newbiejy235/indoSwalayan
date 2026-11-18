@@ -3,6 +3,7 @@ import 'package:mobile/pages/auth/login.dart';
 import 'package:mobile/service/api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});
@@ -103,6 +104,33 @@ class Scaner extends StatefulWidget {
 
   @override
   State<Scaner> createState() => _ScanerState();
+}
+
+class RupiahInputFormatter extends TextInputFormatter {
+  final NumberFormat _format = NumberFormat('#,###', 'id_ID');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final numericValue = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (numericValue.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final number = int.parse(numericValue);
+    final formatted = _format.format(number);
+
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
 
 class _ScanerState extends State<Scaner> {
@@ -255,6 +283,64 @@ class _ScanerState extends State<Scaner> {
     return cart.fold(0, (total, item) => total + getSubtotal(item));
   }
 
+  void showTransactionResult({required bool success, required String message}) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                success ? Icons.check_circle : Icons.cancel,
+                size: 75,
+                color: success ? Colors.green : Colors.red,
+              ),
+
+              const SizedBox(height: 15),
+
+              Text(
+                success ? "Transaksi Berhasil!" : "Transaksi Gagal!",
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black54),
+              ),
+
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: success ? Colors.green : Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () {
+                    Navigator.pop(dialogContext);
+                  },
+                  child: const Text("Mengerti"),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   // Kirim transaksi ke backend
   Future<void> transaksi({
     required String paidAmount,
@@ -288,20 +374,23 @@ class _ScanerState extends State<Scaner> {
       if (response["success"] == true) {
         setState(() {
           cart.clear();
+          _barcode = null;
         });
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Transaksi berhasil")));
+        showTransactionResult(
+          success: true,
+          message: response["message"] ?? "Pembayaran berhasil diproses.",
+        );
       } else {
-        throw Exception(response["message"] ?? "Transaksi gagal");
+        showTransactionResult(
+          success: false,
+          message: response["message"] ?? "Pembayaran gagal diproses.",
+        );
       }
     } catch (error) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.toString())));
+      showTransactionResult(success: false, message: error.toString());
     } finally {
       if (mounted) {
         setState(() => _isCheckoutLoading = false);
@@ -334,9 +423,13 @@ class _ScanerState extends State<Scaner> {
               TextField(
                 controller: _paidAmountController,
                 keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  RupiahInputFormatter(),
+                ],
                 decoration: InputDecoration(
                   prefixText: "Rp ",
-                  hintText: "Contoh: 10000",
+                  hintText: "10.000",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
@@ -354,7 +447,9 @@ class _ScanerState extends State<Scaner> {
 
             ElevatedButton(
               onPressed: () {
-                final paidAmount = _paidAmountController.text.trim();
+                final paidAmount = _paidAmountController.text
+                    .replaceAll('.', '')
+                    .trim();
 
                 if (paidAmount.isEmpty ||
                     int.tryParse(paidAmount) == null ||

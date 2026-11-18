@@ -440,6 +440,62 @@ export class Product {
       });
     }
   };
+
+  getInvoice = async (req: Request, res: Response) => {
+    try {
+      const { invoiceNumber } = req.params;
+
+      // Cari transaksi berdasarkan nomor invoice
+      const [searchInvoice] = await db
+        .select()
+        .from(sales)
+        .where(eq(sales.invoiceNumber, String(invoiceNumber)));
+
+      if (!searchInvoice) {
+        return res.status(404).json({
+          success: false,
+          message: "Invoice tidak ditemukan",
+        });
+      }
+
+      // Pastikan transaksi sudah selesai
+      if (searchInvoice.status !== "selesai") {
+        return res.status(400).json({
+          success: false,
+          message: "Transaksi belum selesai",
+        });
+      }
+
+      // Ambil detail produk invoice
+      const invoiceItems = await db
+        .select({
+          productName: invoice.productName,
+          qty: invoice.quantity,
+          price: invoice.price,
+          subTotal: invoice.subtotal,
+        })
+        .from(invoice)
+        .where(eq(invoice.saleId, searchInvoice.id));
+
+      return res.status(200).json({
+        success: true,
+        message: "Invoice berhasil ditemukan",
+        data: {
+          invoiceNumber: searchInvoice.invoiceNumber,
+          paidAmount: searchInvoice.paidAmount,
+          paymentMethod: searchInvoice.paymentMethod,
+          items: invoiceItems,
+        },
+      });
+    } catch (error) {
+      console.error("GET INVOICE ERROR:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Terjadi kesalahan saat mengambil invoice",
+      });
+    }
+  };
 }
 
 export default new Product();
