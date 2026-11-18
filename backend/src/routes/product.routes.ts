@@ -16,10 +16,11 @@ router.post(
 
 router.get("/", Product.getAllProduct);
 
-router.patch("/:id",authenticate, isOwner, Product.editProduct);
+router.patch("/:id", authenticate, isOwner, Product.editProduct);
 
 // kasir
 
 router.post("/sale", authenticate, management, Product.saleProduct);
+router.get("/barcode/:barcode", authenticate, Product.getProductByBarcode);
 
 export default router;
