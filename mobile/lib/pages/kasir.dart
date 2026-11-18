@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/pages/auth/login.dart';
+import 'package:mobile/pages/invoice.dart';
 import 'package:mobile/service/api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:intl/intl.dart';
@@ -134,6 +135,7 @@ class RupiahInputFormatter extends TextInputFormatter {
 }
 
 class _ScanerState extends State<Scaner> {
+  Map<String, dynamic>? transactionResult;
   final TextEditingController _paidAmountController = TextEditingController();
   Barcode? _barcode;
 
@@ -373,6 +375,8 @@ class _ScanerState extends State<Scaner> {
 
       if (response["success"] == true) {
         setState(() {
+          transactionResult = Map<String, dynamic>.from(response["data"]);
+
           cart.clear();
           _barcode = null;
         });
@@ -380,6 +384,14 @@ class _ScanerState extends State<Scaner> {
         showTransactionResult(
           success: true,
           message: response["message"] ?? "Pembayaran berhasil diproses.",
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => InvoicePage(
+              invoiceNumber: transactionResult!["invoiceNumber"].toString(),
+            ),
+          ),
         );
       } else {
         showTransactionResult(
