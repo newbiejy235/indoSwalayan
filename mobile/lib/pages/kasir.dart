@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/pages/auth/login.dart';
 import 'package:mobile/service/api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:intl/intl.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});
@@ -105,26 +106,276 @@ class Scaner extends StatefulWidget {
 }
 
 class _ScanerState extends State<Scaner> {
-  Barcode? _bacrcode;
-  Set<String> scannedProducts = {};
+  final TextEditingController _paidAmountController = TextEditingController();
+  Barcode? _barcode;
 
-  Future<void> transaksi () async {
-    ApiService.post("/product/sale", data)
+  // Data sementara keranjang
+  final List<Map<String, dynamic>> cart = [];
+
+  // Mencegah barcode yang sama diproses berkali-kali
+  final Set<String> _processingBarcode = {};
+  final Map<String, DateTime> _lastScanAt = {};
+
+  bool _isCheckoutLoading = false;
+
+  final NumberFormat _currencyFormat = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
+
+  String formatRupiah(num value) {
+    return _currencyFormat.format(value);
   }
 
-  Widget _barcodePreview(Barcode? value) {
-    if (value == null) {
-      return const Text(
-        'Scan something!',
-        overflow: TextOverflow.fade,
-        style: TextStyle(color: Colors.white),
-      );
+  // Mengambil produk dari backend berdasarkan barcode
+  Future<void> addProduct(String barcode) async {
+    if (_processingBarcode.contains(barcode)) return;
+
+    // Debounce: kamera bisa mendeteksi barcode yang sama berkali-kali.
+    final now = DateTime.now();
+    final lastScan = _lastScanAt[barcode];
+
+    if (lastScan != null && now.difference(lastScan).inMilliseconds < 1200) {
+      return;
     }
 
-    return Text(
-      value.displayValue ?? 'No display value.',
-      overflow: TextOverflow.fade,
-      style: const TextStyle(color: Colors.white),
+    _lastScanAt[barcode] = now;
+    _processingBarcode.add(barcode);
+
+    try {
+      // Diasumsikan ApiService.get mengembalikan JSON Map.
+      final response = await ApiService.get(
+        "/product/barcode/${Uri.encodeComponent(barcode)}",
+      );
+
+      debugPrint("RESPONSE TYPE: ${response.runtimeType}");
+      debugPrint("RESPONSE: $response");
+
+      if (!mounted) return;
+
+      // Sesuaikan jika ApiService.get lu membungkus response dengan format lain.
+      if (response["success"] != true) {
+        throw Exception(response["message"] ?? "Produk tidak ditemukan");
+      }
+
+      final Map<String, dynamic> product = Map<String, dynamic>.from(
+        response["data"],
+      );
+
+      setState(() {
+        final index = cart.indexWhere((item) => item["barcode"] == barcode);
+
+        if (index != -1) {
+          // Produk sudah ada, quantity ditambah.
+          final currentQty = cart[index]["quantity"] as int;
+          final stock = cart[index]["stock"] as int;
+
+          if (currentQty < stock) {
+            cart[index]["quantity"] = currentQty + 1;
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("Jumlah barang sudah mencapai batas stok"),
+              ),
+            );
+          }
+        } else {
+          // Produk baru masuk keranjang.
+          cart.add({
+            "id": product["id"],
+            "name": product["name"],
+            "description": product["description"] ?? "",
+            "barcode": product["barcode"].toString(),
+            "price": double.parse(product["price"].toString()),
+            "stock": product["stock"] as int,
+            "imageUrl": product["imageUrl"],
+            "quantity": 1,
+          });
+        }
+      });
+    } catch (error, stackTrace) {
+      debugPrint("STACK TRACE: $stackTrace");
+      debugPrint("ERROR SCAN: $error");
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      _processingBarcode.remove(barcode);
+    }
+  }
+
+  // Quantity bertambah
+  void increaseQuantity(int index) {
+    setState(() {
+      final quantity = cart[index]["quantity"] as int;
+      final stock = cart[index]["stock"] as int;
+
+      if (quantity < stock) {
+        cart[index]["quantity"] = quantity + 1;
+      }
+    });
+  }
+
+  // Quantity berkurang, minimal 1
+  void decreaseQuantity(int index) {
+    setState(() {
+      final quantity = cart[index]["quantity"] as int;
+
+      if (quantity > 1) {
+        cart[index]["quantity"] = quantity - 1;
+      }
+    });
+  }
+
+  // Hapus produk dari keranjang
+  void removeProduct(int index) {
+    setState(() {
+      cart.removeAt(index);
+    });
+  }
+
+  // Hitung subtotal satu produk
+  double getSubtotal(Map<String, dynamic> item) {
+    final price = item["price"] as double;
+    final quantity = item["quantity"] as int;
+
+    return price * quantity;
+  }
+
+  // Hitung seluruh barang yang dibeli
+  int get totalQuantity {
+    return cart.fold(0, (total, item) => total + (item["quantity"] as int));
+  }
+
+  // Hitung total pembayaran
+  double get totalPrice {
+    return cart.fold(0, (total, item) => total + getSubtotal(item));
+  }
+
+  // Kirim transaksi ke backend
+  Future<void> transaksi({
+    required String paidAmount,
+    required String paymentMethod,
+  }) async {
+    if (cart.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Keranjang masih kosong")));
+      return;
+    }
+
+    setState(() => _isCheckoutLoading = true);
+
+    try {
+      final data = {
+        "items": cart.map((item) {
+          return {
+            "barcode": item["barcode"].toString(),
+            "quantity": item["quantity"] as int,
+          };
+        }).toList(),
+        "paidAmount": paidAmount,
+        "paymentMethod": paymentMethod,
+      };
+
+      final response = await ApiService.post("/product/sale", data);
+
+      if (!mounted) return;
+
+      if (response["success"] == true) {
+        setState(() {
+          cart.clear();
+        });
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text("Transaksi berhasil")));
+      } else {
+        throw Exception(response["message"] ?? "Transaksi gagal");
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckoutLoading = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _paidAmountController.dispose();
+    super.dispose();
+  }
+
+  void showPaymentDialog() {
+    _paidAmountController.clear();
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Pembayaran Tunai"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text("Masukkan uang yang diberikan pembeli"),
+
+              const SizedBox(height: 12),
+
+              TextField(
+                controller: _paidAmountController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  prefixText: "Rp ",
+                  hintText: "Contoh: 10000",
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+              },
+              child: const Text("Batal"),
+            ),
+
+            ElevatedButton(
+              onPressed: () {
+                final paidAmount = _paidAmountController.text.trim();
+
+                if (paidAmount.isEmpty ||
+                    int.tryParse(paidAmount) == null ||
+                    int.parse(paidAmount) <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text("Masukkan nominal pembayaran yang valid"),
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.pop(dialogContext);
+
+                transaksi(paidAmount: paidAmount, paymentMethod: "tunai");
+              },
+              child: const Text("Bayar"),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -134,73 +385,325 @@ class _ScanerState extends State<Scaner> {
     final barcode = capture.barcodes.first;
     final code = barcode.rawValue;
 
-    if (code == null) return;
+    if (code == null || code.isEmpty) return;
 
     setState(() {
-      _bacrcode = barcode;
-
-      if (!scannedProducts.contains(code)) {
-        scannedProducts.add(code);
-      }
+      _barcode = barcode;
     });
-    print(scannedProducts);
+
+    addProduct(code);
+  }
+
+  Widget _barcodePreview(Barcode? value) {
+    if (value == null) {
+      return const Text(
+        "Scan produk untuk menambahkannya ke keranjang",
+        style: TextStyle(color: Colors.black54),
+      );
+    }
+
+    return Text(
+      value.displayValue ?? "Barcode tidak terbaca",
+      style: const TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
+  // Tampilan satu produk dalam keranjang
+  Widget _cartItem(int index) {
+    final item = cart[index];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Gambar produk
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Image.network(
+              item["imageUrl"] ?? "",
+              width: 65,
+              height: 65,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Container(
+                  width: 65,
+                  height: 65,
+                  color: Colors.grey.shade200,
+                  child: const Icon(Icons.image_not_supported),
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Nama, deskripsi, dan harga
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item["name"],
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  item["description"],
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  formatRupiah(item["price"]),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Tombol quantity
+          Column(
+            children: [
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _quantityButton(
+                    icon: Icons.remove,
+                    onTap: () => decreaseQuantity(index),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Text(
+                      "${item["quantity"]}",
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  _quantityButton(
+                    icon: Icons.add,
+                    onTap: () => increaseQuantity(index),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                formatRupiah(getSubtotal(item)),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 11,
+                ),
+              ),
+              IconButton(
+                onPressed: () => removeProduct(index),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.red,
+                  size: 19,
+                ),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quantityButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Icon(icon, size: 15),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Center(
+      backgroundColor: Colors.grey.shade100,
+      body: SafeArea(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: EdgeInsets.only(left: 50, right: 50, bottom: 20),
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 14),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   const Icon(Icons.barcode_reader, size: 30),
                   const SizedBox(width: 12),
-                  Column(
+                  const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
+                      Text(
                         "Scanner",
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Text(
+                      Text(
                         "Scan produk disini!!",
-                        style: TextStyle(fontSize: 15),
+                        style: TextStyle(fontSize: 13),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-            // Kamera berbentuk kotak
+
+            // Kamera scanner
             Container(
-              height: 300,
-              width: 400,
+              width: 350,
+              height: 220,
+              margin: const EdgeInsets.symmetric(horizontal: 20),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey.shade300, width: 2),
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(18),
                 child: MobileScanner(onDetect: _handleBarcode),
               ),
             ),
 
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
-            // Hasil scan
+            _barcodePreview(_barcode),
+
+            const SizedBox(height: 16),
+
+            // Judul keranjang
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  const Text(
+                    "Keranjang Belanja",
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                  ),
+                  const Spacer(),
+                  Text(
+                    "$totalQuantity barang",
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 10),
+
+            // Daftar produk
+            Expanded(
+              child: cart.isEmpty
+                  ? const Center(
+                      child: Text(
+                        "Belum ada produk di keranjang",
+                        style: TextStyle(color: Colors.black45),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: cart.length,
+                      itemBuilder: (context, index) {
+                        return _cartItem(index);
+                      },
+                    ),
+            ),
+
+            // Ringkasan pembayaran
             Container(
-              padding: const EdgeInsets.all(16),
-              child: _barcodePreview(_bacrcode),
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 14, 20, 20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Text(
+                        "Total barang",
+                        style: TextStyle(color: Colors.black54),
+                      ),
+                      const Spacer(),
+                      Text("$totalQuantity barang"),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Text(
+                        "Total pembayaran",
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        formatRupiah(totalPrice),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: cart.isEmpty || _isCheckoutLoading
+                          ? null
+                          : showPaymentDialog,
+                      child: _isCheckoutLoading
+                          ? const CircularProgressIndicator()
+                          : const Text("Lanjutkan Transaksi"),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
