@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   static const String _baseUrl = 'https://indo-swalayan.vercel.app';
   static const String _tokenKey = 'token';
+  static const String _userDataKey = 'user_data';
 
   static Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -14,6 +15,31 @@ class ApiService {
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString(_tokenKey);
+  }
+
+  static Future<void> saveUserData(Map<String, dynamic> userData) async {
+    final prefs = await SharedPreferences.getInstance();
+    // Ubah Map menjadi teks JSON (String) sebelum disimpan
+    String jsonString = jsonEncode(userData);
+    await prefs.setString(_userDataKey, jsonString);
+  }
+
+  // 2. Fungsi untuk MENGAMBIL kembali menjadi Map<String, dynamic>
+  static Future<Map<String, dynamic>?> getUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString(_userDataKey);
+
+    // Jika data belum ada, kembalikan null
+    if (jsonString == null) return null;
+
+    // Ubah kembali teks JSON (String) menjadi Map
+    return jsonDecode(jsonString) as Map<String, dynamic>;
+  }
+
+  // 3. Fungsi untuk MENGHAPUS data saat Logout
+  static Future<void> removeUserData() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userDataKey);
   }
 
   static Future<void> logout() async {
@@ -31,16 +57,11 @@ class ApiService {
   }
 
   static dynamic _handleResponse(http.Response response) {
-    final body = response.body.isNotEmpty
-        ? jsonDecode(response.body)
-        : null;
-    if (response.statusCode >= 200 &&
-        response.statusCode < 300) {
+    final body = response.body.isNotEmpty ? jsonDecode(response.body) : null;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
       return body;
     }
-    final message = body is Map
-        ? body['message']
-        : null;
+    final message = body is Map ? body['message'] : null;
     throw Exception(message ?? 'Terjadi kesalahan');
   }
 
@@ -64,10 +85,7 @@ class ApiService {
     return _handleResponse(response);
   }
 
-  static Future<dynamic> put(
-    String endpoint,
-    Map<String, dynamic> data,
-  ) async {
+  static Future<dynamic> put(String endpoint, Map<String, dynamic> data) async {
     final response = await http.put(
       Uri.parse('$_baseUrl$endpoint'),
       headers: await _headers(),

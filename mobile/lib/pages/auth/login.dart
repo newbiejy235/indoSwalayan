@@ -15,6 +15,32 @@ class _LoginPageState extends State<LoginPage> {
   final passwordController = TextEditingController();
   bool obscurePassword = true;
   bool loading = false;
+  bool cekSesi = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _cekToken(); // Jalankan pengecekan otomatis saat LoginPage dibuka
+  }
+
+  Future<void> _cekToken() async {
+    final token = await ApiService.getToken();
+
+    if (!mounted) return;
+
+    // Jika token sudah ada dan tidak kosong, langsung pindah ke KasirPage
+    if (token != null && token.isNotEmpty) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const KasirPage()),
+      );
+    } else {
+      // Jika tidak ada token, tampilkan form login seperti biasa
+      setState(() {
+        cekSesi = false;
+      });
+    }
+  }
 
   Future<void> login() async {
     setState(() => loading = true);
@@ -46,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
         'password': passwordController.text,
       });
       await ApiService.saveToken(res['token']);
+
       if (!mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -57,6 +84,8 @@ class _LoginPageState extends State<LoginPage> {
         );
         return;
       }
+      await ApiService.saveUserData(res["userData"]);
+    
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
