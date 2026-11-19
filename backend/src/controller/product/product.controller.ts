@@ -204,7 +204,7 @@ export class Product {
       const user = req.user!;
 
       const salesItems = salesSchema.parse(req.body);
-      const { items, paymentMethod, paidAmount } = salesItems;
+      const { items, paymentMethod, paidAmount, status } = salesItems;
 
       if (!items || items.length === 0) {
         return res.status(400).json({
@@ -289,7 +289,7 @@ export class Product {
           paidAmount: String(paidAmount),
           changeAmount: String(changeAmount),
           paymentMethod,
-          status: "selesai",
+          status: status,
         })
         .returning();
 
