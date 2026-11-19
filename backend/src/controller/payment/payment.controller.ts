@@ -17,7 +17,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       .where(
         and(
           eq(sales.invoiceNumber, invoiceNumber),
-          eq(sales.status, "belum dibayar"),
+          eq(sales.status, "menunggu"),
         ),
       );
 
