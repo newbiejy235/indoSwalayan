@@ -11,6 +11,6 @@ const router = Router();
 router.post("/create", authenticate, createTransaction);
 
 // Endpoint khusus menerima notifikasi dari Midtrans
-router.post("/notification", authenticate, handleNotification);
+router.post("/notification", handleNotification);
 
 export default router;
