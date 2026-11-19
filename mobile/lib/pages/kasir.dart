@@ -116,6 +116,7 @@ class _ScanerState extends State<Scaner> {
 
   // Invoice non-tunai yang sudah dibuat tetapi pembayarannya belum selesai.
   String? _pendingInvoiceNumber;
+  String? _pendingRedirectUrl;
 
   // Data sementara keranjang
   final List<Map<String, dynamic>> cart = [];
@@ -431,7 +432,13 @@ class _ScanerState extends State<Scaner> {
       }
 
       // 3. Jika non-tunai, buat transaksi Snap lalu buka halaman pembayaran.
-      final paid = await _requestMidtransPayment(invoiceNumber);
+      final redirectUrl = await _createMidtransPayment(invoiceNumber);
+
+      if (!mounted) return;
+
+      setState(() => _pendingRedirectUrl = redirectUrl);
+
+      final paid = await _openMidtransCheckout(invoiceNumber, redirectUrl);
 
       if (!mounted) return;
 
@@ -443,14 +450,7 @@ class _ScanerState extends State<Scaner> {
         return;
       }
 
-      setState(() => _pendingInvoiceNumber = null);
-
-      showTransactionResult(
-        success: true,
-        message: "Pembayaran non-tunai berhasil diproses.",
-      );
-
-      await _openInvoice(invoiceNumber);
+      await _completePendingPayment(invoiceNumber);
     } catch (error, stackTrace) {
       debugPrint("CHECKOUT ERROR: $error");
       debugPrint("STACK TRACE: $stackTrace");
@@ -465,12 +465,24 @@ class _ScanerState extends State<Scaner> {
     }
   }
 
-  Future<bool> _requestMidtransPayment(String invoiceNumber) async {
+  Future<bool> _isInvoicePaid(String invoiceNumber) async {
+    try {
+      final response = await ApiService.get(
+        "/product/invoice/${Uri.encodeComponent(invoiceNumber)}",
+      );
+
+      return response is Map && response["success"] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String> _createMidtransPayment(String invoiceNumber) async {
     final paymentResponse = await ApiService.post("/payment/create", {
       "invoiceNumber": invoiceNumber,
     });
 
-    if (!mounted) return false;
+    if (!mounted) return "";
 
     if (paymentResponse["success"] != true) {
       throw Exception(
@@ -483,6 +495,15 @@ class _ScanerState extends State<Scaner> {
     if (redirectUrl == null || redirectUrl.trim().isEmpty) {
       throw Exception("URL pembayaran Midtrans tidak ditemukan");
     }
+
+    return redirectUrl;
+  }
+
+  Future<bool> _openMidtransCheckout(
+    String invoiceNumber,
+    String redirectUrl,
+  ) async {
+    if (!mounted) return false;
 
     final result = await Navigator.push<bool>(
       context,
@@ -497,6 +518,22 @@ class _ScanerState extends State<Scaner> {
     return result == true;
   }
 
+  Future<void> _completePendingPayment(String invoiceNumber) async {
+    if (!mounted) return;
+
+    setState(() {
+      _pendingInvoiceNumber = null;
+      _pendingRedirectUrl = null;
+    });
+
+    showTransactionResult(
+      success: true,
+      message: "Pembayaran non-tunai berhasil diproses.",
+    );
+
+    await _openInvoice(invoiceNumber);
+  }
+
   // Melanjutkan pembayaran non-tunai yang sebelumnya belum selesai.
   Future<void> _resumeMidtransPayment() async {
     final invoiceNumber = _pendingInvoiceNumber;
@@ -506,7 +543,26 @@ class _ScanerState extends State<Scaner> {
     setState(() => _isCheckoutLoading = true);
 
     try {
-      final paid = await _requestMidtransPayment(invoiceNumber);
+      // Notifikasi bisa saja sudah masuk sejak halaman ditutup.
+      if (await _isInvoicePaid(invoiceNumber)) {
+        await _completePendingPayment(invoiceNumber);
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Gunakan kembali URL Snap yang sama agar tidak membuat order baru.
+      var redirectUrl = _pendingRedirectUrl;
+
+      if (redirectUrl == null) {
+        redirectUrl = await _createMidtransPayment(invoiceNumber);
+
+        if (!mounted) return;
+
+        setState(() => _pendingRedirectUrl = redirectUrl);
+      }
+
+      final paid = await _openMidtransCheckout(invoiceNumber, redirectUrl);
 
       if (!mounted) return;
 
@@ -515,19 +571,18 @@ class _ScanerState extends State<Scaner> {
         return;
       }
 
-      setState(() => _pendingInvoiceNumber = null);
-
-      showTransactionResult(
-        success: true,
-        message: "Pembayaran non-tunai berhasil diproses.",
-      );
-
-      await _openInvoice(invoiceNumber);
+      await _completePendingPayment(invoiceNumber);
     } catch (error, stackTrace) {
       debugPrint("RESUME PAYMENT ERROR: $error");
       debugPrint("STACK TRACE: $stackTrace");
 
       if (!mounted) return;
+
+      // Jika error terjadi karena invoice sudah dibayar, anggap sukses.
+      if (await _isInvoicePaid(invoiceNumber)) {
+        await _completePendingPayment(invoiceNumber);
+        return;
+      }
 
       showTransactionResult(success: false, message: error.toString());
     } finally {
