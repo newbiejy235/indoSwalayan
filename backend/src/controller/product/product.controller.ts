@@ -12,7 +12,7 @@ import { AuthRequest } from "../../middleware/users.middleware";
 import { uploadProductPhoto } from "../../utils/cloudinaryUpload";
 import { salesSchema } from "../../validation/sales.validation";
 import { invoice } from "../../config/schema";
-import { ZodError } from "zod";
+import { string, ZodError } from "zod";
 
 const invoiceNumber = (): string => {
   return crypto.randomInt(100000, 1000000).toString();
@@ -204,7 +204,7 @@ export class Product {
       const user = req.user!;
 
       const salesItems = salesSchema.parse(req.body);
-      const { items, paymentMethod, paidAmount } = salesItems;
+      const { items, paymentMethod, paidAmount, status } = salesItems;
 
       if (!items || items.length === 0) {
         return res.status(400).json({
@@ -289,7 +289,7 @@ export class Product {
           paidAmount: String(paidAmount),
           changeAmount: String(changeAmount),
           paymentMethod,
-          status: "selesai",
+          status: status,
         })
         .returning();
 
@@ -395,6 +395,107 @@ export class Product {
   //     });
   //   }
   // };
+  getProductByBarcode = async (req: Request, res: Response) => {
+    try {
+      const { barcode } = req.params;
+
+      if (!barcode || String(barcode).trim() === "") {
+        return res.status(400).json({
+          success: false,
+          message: "Barcode wajib diisi",
+        });
+      }
+
+      const [product] = await db
+        .select()
+        .from(products)
+        .where(eq(products.barcode, String(barcode)))
+        .limit(1);
+
+      if (!product) {
+        return res.status(404).json({
+          success: false,
+          message: "Produk tidak ditemukan",
+        });
+      }
+
+      if (!product.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "Produk sudah tidak aktif",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Produk berhasil ditemukan",
+        data: product,
+      });
+    } catch (error) {
+      console.error("Get Product By Barcode Error:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error",
+      });
+    }
+  };
+
+  getInvoice = async (req: Request, res: Response) => {
+    try {
+      const { invoiceNumber } = req.params;
+
+      // Cari transaksi berdasarkan nomor invoice
+      const [searchInvoice] = await db
+        .select()
+        .from(sales)
+        .where(eq(sales.invoiceNumber, String(invoiceNumber)));
+
+      if (!searchInvoice) {
+        return res.status(404).json({
+          success: false,
+          message: "Invoice tidak ditemukan",
+        });
+      }
+
+      // Pastikan transaksi sudah selesai
+      if (searchInvoice.status !== "selesai") {
+        return res.status(400).json({
+          success: false,
+          message: "Transaksi belum selesai",
+        });
+      }
+
+      // Ambil detail produk invoice
+      const invoiceItems = await db
+        .select({
+          productName: invoice.productName,
+          qty: invoice.quantity,
+          price: invoice.price,
+          subTotal: invoice.subtotal,
+        })
+        .from(invoice)
+        .where(eq(invoice.saleId, searchInvoice.id));
+
+      return res.status(200).json({
+        success: true,
+        message: "Invoice berhasil ditemukan",
+        data: {
+          invoiceNumber: searchInvoice.invoiceNumber,
+          paidAmount: searchInvoice.paidAmount,
+          paymentMethod: searchInvoice.paymentMethod,
+          items: invoiceItems,
+        },
+      });
+    } catch (error) {
+      console.error("GET INVOICE ERROR:", error);
+
+      return res.status(500).json({
+        success: false,
+        message: "Terjadi kesalahan saat mengambil invoice",
+      });
+    }
+  };
 }
 
 export default new Product();
