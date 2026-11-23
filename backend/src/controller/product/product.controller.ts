@@ -126,7 +126,7 @@ export class Product {
   editProduct = async (req: AuthRequest, res: Response) => {
     try {
       console.log("tes");
-      
+
       const productId = Number(req.params.id);
 
       if (!Number.isInteger(productId) || productId <= 0) {
@@ -158,10 +158,6 @@ export class Product {
           message: "Minimal ubah satu atribut produk",
         });
       }
-
-      console.log("CONTENT TYPE:", req.headers["content-type"]);
-      console.log("BODY:", req.body);
-      console.log("FILE:", req.file);
 
       const validation = editProductSchema.safeParse(req.body);
 
