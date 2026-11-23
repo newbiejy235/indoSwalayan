@@ -5,7 +5,7 @@ import {
   Plus_Jakarta_Sans,
 } from "next/font/google"
 import Sidebar from "@/components/sidebar/sidebar"
-
+import { Toaster } from "react-hot-toast"
 import "../globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils"
@@ -28,9 +28,10 @@ export default function RootLayout({
     >
       <body className="font-[family-name:var(--font-jakarta)]">
         <ThemeProvider>
-          <div className="flex ">
+          <div className="flex">
             <Sidebar />
             {children}
+            <Toaster position="top-center" />
           </div>
         </ThemeProvider>
       </body>

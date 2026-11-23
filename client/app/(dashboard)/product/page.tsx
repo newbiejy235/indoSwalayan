@@ -16,6 +16,8 @@ import {
 
 import api from "@/lib/api"
 import EditProduct from "../editProduct/page"
+import userData from "@/utils/userData"
+import toast from "react-hot-toast"
 
 type Product = {
   id: number
@@ -29,6 +31,7 @@ type Product = {
 }
 
 const Products = () => {
+  const users = userData.get()
   const [selectedProduct, setSelectedProduct] = useState<number | null>(null)
   const [data, setData] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +65,163 @@ const Products = () => {
     fetchProducts()
   }, [])
 
+  const deleteHandler = async (id: number) => {
+    const idProducts = data.filter((items) => items.id === id)
+    const result = idProducts[0]
+    console.log(result)
+
+    toast.custom((t) => (
+      <div className="w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-xl">
+        <h3 className="font-semibold text-gray-900">Hapus produk?</h3>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Apakah kamu yakin ingin menghapus produk{" "}
+          <span className="font-semibold text-gray-800">{result.name}</span>?
+        </p>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
+          >
+            Batal
+          </button>
+
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id)
+
+              try {
+                const response = await api.patch(
+                  `/product/${result.id}`,
+                  { isActive: false },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${users?.token}`,
+                    },
+                  }
+                )
+
+                if (!response.data.success) {
+                  toast.error(response.data.message)
+                  return
+                }
+
+                toast.success("Produk berhasil dihapus")
+
+                // Update tampilan produk
+                setData((prev) => prev.filter((item) => item.id !== id))
+              } catch (error) {
+                toast.error("Gagal menghapus produk")
+                console.error(error)
+              }
+            }}
+            className="rounded-lg bg-red-500 px-4 py-2 text-sm text-white hover:bg-red-600"
+          >
+            Ya, hapus
+          </button>
+        </div>
+      </div>
+    ))
+  }
+  const pluStock = (id: number) => {
+    const result = data.find((item) => item.id === id)
+
+    if (!result) {
+      toast.error("Produk tidak ditemukan")
+      return
+    }
+
+    let stockInput = 1
+
+    toast.custom((t) => (
+      <div className="w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-xl">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Tambah Stok Produk
+        </h3>
+
+        <p className="mt-2 text-sm text-gray-500">
+          Produk:{" "}
+          <span className="font-semibold text-gray-800">{result.name}</span>
+        </p>
+
+        <p className="mt-1 text-sm text-gray-500">
+          Stok saat ini: {result.stock}
+        </p>
+
+        <div className="mt-4">
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Jumlah stok yang ingin ditambahkan
+          </label>
+
+          <input
+            type="number"
+            min="1"
+            defaultValue={1}
+            onChange={(e) => {
+              stockInput = Number(e.target.value)
+            }}
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500"
+            placeholder="Masukkan jumlah stok"
+          />
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="rounded-lg bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
+          >
+            Batal
+          </button>
+
+          <button
+            onClick={async () => {
+              if (!Number.isInteger(stockInput) || stockInput <= 0) {
+                toast.error("Masukkan jumlah stok yang valid")
+                return
+              }
+
+              try {
+                const response = await api.patch(
+                  `/product/${result.id}`,
+                  {
+                    stock: result.stock + stockInput,
+                  },
+                  {
+                    headers: {
+                      Authorization: `Bearer ${users?.token}`,
+                    },
+                  }
+                )
+
+                if (!response.data.success) {
+                  toast.error(response.data.message)
+                  return
+                }
+
+                toast.dismiss(t.id)
+                toast.success(`Berhasil menambahkan ${stockInput} stok`)
+
+                setData((prev) =>
+                  prev.map((item) =>
+                    item.id === id
+                      ? { ...item, stock: result.stock + stockInput }
+                      : item
+                  )
+                )
+              } catch (error) {
+                toast.error("Gagal menambahkan stok")
+                console.error(error)
+              }
+            }}
+            className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+          >
+            Tambahkan
+          </button>
+        </div>
+      </div>
+    ))
+  }
   // FORMAT RUPIAH
   const formatRupiah = (value: string | number) => {
     return new Intl.NumberFormat("id-ID", {
@@ -340,6 +500,7 @@ const Products = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
+                            onClick={() => pluStock(product.id)}    
                             title="Tambah stock"
                             className="flex items-center gap-1 rounded-lg bg-blue-100 p-2 text-gray-400 transition hover:bg-blue-200 hover:text-blue-600"
                           >
@@ -358,6 +519,7 @@ const Products = () => {
                           <button
                             title="Hapus"
                             className="rounded-lg p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                            onClick={() => deleteHandler(product.id)}
                           >
                             <Trash2 size={17} />
                           </button>
