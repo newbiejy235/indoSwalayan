@@ -1,35 +1,72 @@
+"use client"
+
 import { Box, Home, ScanLine } from "lucide-react"
 import Link from "next/link"
-import React from "react"
+import Image from "next/image"
+import { usePathname } from "next/navigation"
 
 const Sidebar = () => {
+  const pathname = usePathname()
+
+  const menus = [
+    {
+      name: "Dashboard",
+      href: "/dashboard",
+      icon: Home,
+    },
+    {
+      name: "Cashier",
+      href: "/karyawan",
+      icon: ScanLine,
+    },
+    {
+      name: "Product",
+      href: "/product",
+      icon: Box,
+    },
+  ]
+
   return (
-    <aside className="flex min-h-screen max-w-56 flex-col items-center border border-slate-200 bg-white">
-      <img className="h-40 w-40" src="/images/indoSwalayan2.png" alt="logo" />
+    <aside className="flex min-h-screen w-56 flex-col items-center border-r border-slate-200 bg-white">
+      <Image
+        className="h-40 w-40 object-contain"
+        src="/images/indoSwalayan2.png"
+        alt="logo"
+        width={160}
+        height={160}
+      />
 
-      <nav className="mt-10 flex flex-col space-y-5">
-        <Link href={"/dashboard"} className="flex min-w-40 items-center hover:cursor-pointer gap-3 rounded-2xl bg-[#141414] p-2 text-white">
-          <div className="rounded-full bg-white text-black p-1">
-            <Home size={20} />
-          </div>
-          <h1 className="text-md">Dashboard</h1>
-        </Link>
+      <nav className="mt-10 flex w-full flex-col space-y-5 px-4">
+        {menus.map((menu) => {
+          const isActive =
+            pathname === menu.href || pathname.startsWith(`${menu.href}/`)
 
-        <Link href={"/karyawan"} className="flex min-w-40 items-center hover:cursor-pointer gap-3 rounded-2xl group hover:bg-[#141414]/85 p-2 text-black hover:text-white">
-          <div className="rounded-full group-hover:bg-white text-black p-1">
-            <ScanLine size={20} />
-          </div>
-          <h1 className="text-md">Cashier</h1>
-        </Link>
+          const Icon = menu.icon
 
-        <div className="flex min-w-40 items-center hover:cursor-pointer gap-3 rounded-2xl group hover:bg-[#141414]/85 p-2 text-black hover:text-white">
-          <div className="rounded-full group-hover:bg-white text-black p-1">
-            <Box size={20} />
-          </div>
-          <h1 className="text-md">Products</h1>
-        </div>
+          return (
+            <Link
+              key={menu.href}
+              href={menu.href}
+              className={`flex min-w-40 items-center gap-3 rounded-2xl p-2 transition-all duration-200 ${
+                isActive
+                  ? "bg-[#141414] text-white"
+                  : "text-black hover:bg-[#141414]/85 hover:text-white"
+              }`}
+            >
+              <div
+                className={`rounded-full p-1 transition-colors ${
+                  isActive
+                    ? "bg-white text-black"
+                    : "text-black group-hover:bg-white"
+                }`}
+              >
+                <Icon size={20} />
+              </div>
 
-        
+              <h1 className="text-md">{menu.name}</h1>
+            </Link>
+          )
+        })}
       </nav>
     </aside>
   )

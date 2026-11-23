@@ -123,27 +123,17 @@ export class Product {
     } catch (error) {}
   };
 
-  editProduct = async (req: Request, res: Response) => {
+  editProduct = async (req: AuthRequest, res: Response) => {
     try {
+      console.log("tes");
+      
       const productId = Number(req.params.id);
 
-      // Validasi ID
       if (!Number.isInteger(productId) || productId <= 0) {
-        res.status(400).json({
+        return res.status(400).json({
+          success: false,
           message: "ID produk tidak valid",
         });
-        return;
-      }
-
-      // Validasi body
-      const validatedData = editProductSchema.parse(req.body);
-
-      // Pastikan ada atribut yang ingin diubah
-      if (Object.keys(validatedData).length === 0) {
-        res.status(400).json({
-          message: "Minimal ubah satu atribut produk",
-        });
-        return;
       }
 
       const [searchProduct] = await db
@@ -152,48 +142,74 @@ export class Product {
         .where(eq(products.id, productId));
 
       if (!searchProduct) {
-        res.status(404).json({
+        return res.status(404).json({
+          success: false,
           message: "Produk tidak ditemukan",
         });
-        return;
       }
 
-      const updatedData = {
+      // Validasi body hanya jika ada data yang dikirim
+      const hasBody = Object.keys(req.body || {}).length > 0;
+      const hasImage = Boolean(req.file);
+
+      if (!hasBody && !hasImage) {
+        return res.status(400).json({
+          success: false,
+          message: "Minimal ubah satu atribut produk",
+        });
+      }
+
+      console.log("CONTENT TYPE:", req.headers["content-type"]);
+      console.log("BODY:", req.body);
+      console.log("FILE:", req.file);
+
+      const validation = editProductSchema.safeParse(req.body);
+
+      if (!validation.success) {
+        // Log ke terminal backend untuk mempermudah debugging
+        console.error("VALIDATION ERROR:", validation.error.format());
+
+        return res.status(400).json({
+          success: false,
+          message: "Validasi gagal",
+          errors: {
+            ...validation.error.flatten().fieldErrors,
+            ...(validation.error.flatten().formErrors.length > 0 && {
+              _form: validation.error.flatten().formErrors,
+            }),
+          },
+        });
+      }
+
+      const validatedData = validation.data;
+
+      const updatedData: Record<string, any> = {
         ...validatedData,
-        ...(validatedData.stock !== undefined && {
-          stock: searchProduct.stock + validatedData.stock,
-        }),
         updatedAt: new Date(),
       };
 
-      // Update produk
+      // Upload gambar jika ada file baru
+      if (req.file) {
+        const uploaded = await uploadProductPhoto(req.file.buffer);
+        updatedData.imageUrl = uploaded.secure_url;
+      }
+
       const [updatedProduct] = await db
         .update(products)
         .set(updatedData)
         .where(eq(products.id, productId))
         .returning();
 
-      if (!updatedProduct) {
-        res.status(404).json({
-          message: "Produk tidak ditemukan",
-        });
-        return;
-      }
-
-      res.status(200).json({
+      return res.status(200).json({
+        success: true,
         message: "Produk berhasil diperbarui",
         data: updatedProduct,
       });
     } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({
-          message: "Validasi gagal",
-          errors: error.flatten().fieldErrors,
-        });
-        return;
-      }
+      console.error("EDIT PRODUCT ERROR:", error);
 
-      res.status(500).json({
+      return res.status(500).json({
+        success: false,
         message: "Terjadi kesalahan pada server",
       });
     }

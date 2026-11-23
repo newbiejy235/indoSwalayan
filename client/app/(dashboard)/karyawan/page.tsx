@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation"
 import api from "@/lib/api"
 import userData from "@/utils/userData"
 import Sidebar from "@/components/sidebar/sidebar"
+import { BookUser } from "lucide-react"
 
 interface Karyawan {
-  id: number | string
-  name: string
+  code: string
+  first_name: string
+  last_name: string
   email: string
-  phone?: string
-  role?: string
-  createdAt?: string
+  phone_number?: string
 }
 
 const DashboardKaryawan = () => {
@@ -42,6 +42,7 @@ const DashboardKaryawan = () => {
 
         // Mengambil data dari response API
         const result = response.data.data
+        console.log(result)
 
         setKaryawan(Array.isArray(result) ? result : [])
       } catch (err) {
@@ -60,9 +61,10 @@ const DashboardKaryawan = () => {
       const keyword = search.toLowerCase()
 
       return (
-        item.name?.toLowerCase().includes(keyword) ||
+        item.first_name?.toLowerCase().includes(keyword) ||
+        item.last_name?.toLowerCase().includes(keyword) ||
         item.email?.toLowerCase().includes(keyword) ||
-        String(item.id).toLowerCase().includes(keyword)
+        item.code?.includes(keyword)
       )
     })
   }, [karyawan, search])
@@ -80,8 +82,8 @@ const DashboardKaryawan = () => {
           </div>
 
           <Link
-            href="/dashboard/karyawan/tambah"
-            className="rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
+            href="/addKaryawan"
+            className="rounded-xl flex items-center justify-center bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
           >
             + Tambah Karyawan
           </Link>
@@ -98,23 +100,8 @@ const DashboardKaryawan = () => {
                 </h2>
               </div>
 
-              <div className="rounded-xl bg-blue-50 p-4 text-2xl text-blue-600">
-                <span>👥</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">Hasil Pencarian</p>
-                <h2 className="mt-2 text-3xl font-bold text-gray-900">
-                  {loading ? "..." : filteredKaryawan.length}
-                </h2>
-              </div>
-
-              <div className="rounded-xl bg-green-50 p-4 text-2xl text-green-600">
-                <span>📊</span>
+                <BookUser />
               </div>
             </div>
           </div>
@@ -144,11 +131,10 @@ const DashboardKaryawan = () => {
               <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
                 <tr>
                   <th className="px-6 py-4">No</th>
+                  <th className="px-6 py-4">Employee code</th>
                   <th className="px-6 py-4">Nama Karyawan</th>
                   <th className="px-6 py-4">Email</th>
                   <th className="px-6 py-4">No. Telepon</th>
-                  <th className="px-6 py-4">Role</th>
-                  <th className="px-6 py-4">ID</th>
                 </tr>
               </thead>
 
@@ -183,11 +169,13 @@ const DashboardKaryawan = () => {
                   </tr>
                 ) : (
                   filteredKaryawan.map((item, index) => (
-                    <tr key={item.id} className="transition hover:bg-gray-50">
+                    <tr key={item.code} className="transition hover:bg-gray-50">
                       <td className="px-6 py-4 text-gray-500">{index + 1}</td>
+                      <td className="px-6 py-4 text-gray-500">#{item.code}</td>
 
                       <td className="px-6 py-4 font-semibold whitespace-nowrap text-gray-800">
-                        {item.name || "-"}
+                        {item.first_name || "-"} <span></span>
+                        {item.last_name || "-"}
                       </td>
 
                       <td className="px-6 py-4 text-gray-600">
@@ -195,16 +183,8 @@ const DashboardKaryawan = () => {
                       </td>
 
                       <td className="px-6 py-4 text-gray-600">
-                        {item.phone || "-"}
+                        {item.phone_number || "-"}
                       </td>
-
-                      <td className="px-6 py-4">
-                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-                          {item.role || "Karyawan"}
-                        </span>
-                      </td>
-
-                      <td className="px-6 py-4 text-gray-500">#{item.id}</td>
                     </tr>
                   ))
                 )}

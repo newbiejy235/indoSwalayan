@@ -15,9 +15,10 @@ const TambahKaryawan = () => {
   const [error, setError] = useState("")
 
   const [form, setForm] = useState({
-    name: "",
+    first_name: "",
+    last_name: "",
     email: "",
-    phone: "",
+    phone_number: "",
     password: "",
   })
 
@@ -48,19 +49,35 @@ const TambahKaryawan = () => {
     setError("")
 
     try {
-      const response = await api.post("/auth/register/karyawan", {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-      })
+      const session = await userData.get()
+
+      if (!session?.token) {
+        router.replace("/")
+        return
+      }
+      const response = await api.post(
+        "/auth/register/karyawan",
+        {
+          first_name: form.first_name,
+          last_name: form.last_name,
+          email: form.email,
+          phone_number: form.phone_number,
+          password: form.password,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${session.token}`,
+          },
+        }
+      )
 
       setMessage(response.data.message || "Karyawan berhasil ditambahkan.")
 
       setForm({
-        name: "",
+        first_name: "",
+        last_name: "",
         email: "",
-        phone: "",
+        phone_number: "",
         password: "",
       })
     } catch (err: any) {
@@ -77,13 +94,11 @@ const TambahKaryawan = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-
       <main className="p-5 md:ml-64 md:p-8">
         {/* Header */}
         <div className="mb-8">
           <Link
-            href="/dashboard/karyawan"
+            href="karyawan"
             className="text-sm font-medium text-blue-600 hover:text-blue-800"
           >
             ← Kembali ke Data Karyawan
@@ -122,16 +137,31 @@ const TambahKaryawan = () => {
             {/* Nama */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Nama Lengkap
+                Nama depan
               </label>
 
               <input
                 type="text"
-                name="name"
-                value={form.name}
+                name="first_name"
+                value={form.first_name}
                 onChange={handleChange}
                 placeholder="Masukkan nama lengkap"
                 required
+                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Nama belakang
+              </label>
+
+              <input
+                type="text"
+                name="last_name"
+                value={form.last_name}
+                onChange={handleChange}
+                placeholder="Masukkan nama lengkap"
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -161,8 +191,8 @@ const TambahKaryawan = () => {
 
               <input
                 type="tel"
-                name="phone"
-                value={form.phone}
+                name="phone_number"
+                value={form.phone_number}
                 onChange={handleChange}
                 placeholder="08xxxxxxxxxx"
                 className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-blue-500"
