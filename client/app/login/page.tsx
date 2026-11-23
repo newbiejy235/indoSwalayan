@@ -16,9 +16,9 @@ const Login = () => {
 
   useEffect(() => {
     const data = userData.get()
-    if (data?.token) {
-      router.push("/dashboard")
-    }
+    // if (data?.token) {
+    //   router.push("/dashboard")
+    // }
   })
 
   const loginHandler = async (e: React.FormEvent<HTMLFormElement>) => {

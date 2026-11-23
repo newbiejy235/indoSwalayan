@@ -27,8 +27,12 @@ export default function RootLayout({
       className={cn("antialiased", jakarta.variable)}
     >
       <body className="font-[family-name:var(--font-jakarta)]">
-        <ThemeProvider>{children}</ThemeProvider>
-        <Sidebar />
+        <ThemeProvider>
+          <div className="flex ">
+            <Sidebar />
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   )
