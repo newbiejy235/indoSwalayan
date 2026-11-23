@@ -5,6 +5,8 @@ import 'package:mobile/service/api.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
+import 'package:mobile/enums/payment_method.dart';
+import 'package:mobile/pages/midtrans_checkout.dart';
 
 class KasirPage extends StatefulWidget {
   const KasirPage({super.key});
@@ -107,37 +109,14 @@ class Scaner extends StatefulWidget {
   State<Scaner> createState() => _ScanerState();
 }
 
-class RupiahInputFormatter extends TextInputFormatter {
-  final NumberFormat _format = NumberFormat('#,###', 'id_ID');
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final numericValue = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (numericValue.isEmpty) {
-      return const TextEditingValue(
-        text: '',
-        selection: TextSelection.collapsed(offset: 0),
-      );
-    }
-
-    final number = int.parse(numericValue);
-    final formatted = _format.format(number);
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}
-
 class _ScanerState extends State<Scaner> {
   Map<String, dynamic>? transactionResult;
   final TextEditingController _paidAmountController = TextEditingController();
   Barcode? _barcode;
+
+  // Invoice non-tunai yang sudah dibuat tetapi pembayarannya belum selesai.
+  String? _pendingInvoiceNumber;
+  String? _pendingRedirectUrl;
 
   // Data sementara keranjang
   final List<Map<String, dynamic>> cart = [];
@@ -190,11 +169,23 @@ class _ScanerState extends State<Scaner> {
       }
 
       final Map<String, dynamic> product = Map<String, dynamic>.from(
-        response["data"],
+        response["data"] as Map,
       );
 
+      final productPrice =
+          double.tryParse(product["price"]?.toString() ?? "") ?? 0;
+      final productStock =
+          int.tryParse(product["stock"]?.toString() ?? "") ?? 0;
+      final productBarcode = product["barcode"]?.toString() ?? barcode;
+
+      if (productStock <= 0) {
+        throw Exception("Stok produk habis");
+      }
+
       setState(() {
-        final index = cart.indexWhere((item) => item["barcode"] == barcode);
+        final index = cart.indexWhere(
+          (item) => item["barcode"] == productBarcode,
+        );
 
         if (index != -1) {
           // Produk sudah ada, quantity ditambah.
@@ -214,11 +205,11 @@ class _ScanerState extends State<Scaner> {
           // Produk baru masuk keranjang.
           cart.add({
             "id": product["id"],
-            "name": product["name"],
-            "description": product["description"] ?? "",
-            "barcode": product["barcode"].toString(),
-            "price": double.parse(product["price"].toString()),
-            "stock": product["stock"] as int,
+            "name": product["name"]?.toString() ?? "Tanpa nama",
+            "description": product["description"]?.toString() ?? "",
+            "barcode": productBarcode,
+            "price": productPrice,
+            "stock": productStock,
             "imageUrl": product["imageUrl"],
             "quantity": 1,
           });
@@ -343,21 +334,51 @@ class _ScanerState extends State<Scaner> {
     );
   }
 
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _plainAmount(num value) => value.toStringAsFixed(2);
+
+  Future<void> _openInvoice(String invoiceNumber) async {
+    if (!mounted) return;
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => InvoicePage(invoiceNumber: invoiceNumber),
+      ),
+    );
+  }
+
   // Kirim transaksi ke backend
   Future<void> transaksi({
     required String paidAmount,
-    required String paymentMethod,
+    required PaymentMethod paymentMethod,
   }) async {
     if (cart.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Keranjang masih kosong")));
+      _showSnackBar("Keranjang masih kosong");
+      return;
+    }
+
+    if (_isCheckoutLoading) return;
+
+    final parsedPaidAmount = double.tryParse(paidAmount) ?? 0;
+
+    if (paymentMethod == PaymentMethod.tunai && parsedPaidAmount < totalPrice) {
+      _showSnackBar("Nominal pembayaran kurang!");
       return;
     }
 
     setState(() => _isCheckoutLoading = true);
 
     try {
+      // 1. Buat penjualan terlebih dahulu.
+      // Total sebenarnya tetap dihitung ulang oleh backend dari harga produk,
+      // jadi nilai dari klien tidak bisa dipakai untuk memanipulasi total.
       final data = {
         "items": cart.map((item) {
           return {
@@ -365,42 +386,203 @@ class _ScanerState extends State<Scaner> {
             "quantity": item["quantity"] as int,
           };
         }).toList(),
-        "paidAmount": paidAmount,
-        "paymentMethod": paymentMethod,
+
+        "paidAmount": _plainAmount(parsedPaidAmount),
+        "paymentMethod": paymentMethod.value,
+
+        // Tunai langsung selesai.
+        // Non-tunai menunggu pembayaran Midtrans.
+        "status": paymentMethod == PaymentMethod.tunai ? "selesai" : "menunggu",
       };
 
-      final response = await ApiService.post("/product/sale", data);
+      final saleResponse = await ApiService.post("/product/sale", data);
 
       if (!mounted) return;
 
-      if (response["success"] == true) {
-        setState(() {
-          transactionResult = Map<String, dynamic>.from(response["data"]);
+      if (saleResponse["success"] != true) {
+        throw Exception(saleResponse["message"] ?? "Gagal membuat penjualan");
+      }
 
-          cart.clear();
-          _barcode = null;
-        });
+      final saleData = Map<String, dynamic>.from(saleResponse["data"] as Map);
+      final invoiceNumber = saleData["invoiceNumber"].toString();
 
+      // Keranjang dikosongkan setelah penjualan berhasil dibuat.
+      setState(() {
+        transactionResult = saleData;
+        cart.clear();
+        _barcode = null;
+
+        // Simpan invoice non-tunai agar pembayaran bisa dilanjutkan
+        // jika pembuatan transaksi Midtrans gagal.
+        if (paymentMethod == PaymentMethod.midtrans) {
+          _pendingInvoiceNumber = invoiceNumber;
+        }
+      });
+
+      // 2. Jika tunai, selesaikan langsung.
+      if (paymentMethod == PaymentMethod.tunai) {
         showTransactionResult(
           success: true,
-          message: response["message"] ?? "Pembayaran berhasil diproses.",
+          message:
+              saleResponse["message"] ?? "Pembayaran tunai berhasil diproses.",
         );
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => InvoicePage(
-              invoiceNumber: transactionResult!["invoiceNumber"].toString(),
-            ),
-          ),
-        );
-      } else {
-        showTransactionResult(
-          success: false,
-          message: response["message"] ?? "Pembayaran gagal diproses.",
-        );
+
+        await _openInvoice(invoiceNumber);
+        return;
       }
-    } catch (error) {
+
+      // 3. Jika non-tunai, buat transaksi Snap lalu buka halaman pembayaran.
+      final redirectUrl = await _createMidtransPayment(invoiceNumber);
+
       if (!mounted) return;
+
+      setState(() => _pendingRedirectUrl = redirectUrl);
+
+      final paid = await _openMidtransCheckout(invoiceNumber, redirectUrl);
+
+      if (!mounted) return;
+
+      if (!paid) {
+        _showSnackBar(
+          "Pembayaran belum selesai. Gunakan tombol \"Lanjutkan Pembayaran\" "
+          "untuk mencoba lagi.",
+        );
+        return;
+      }
+
+      await _completePendingPayment(invoiceNumber);
+    } catch (error, stackTrace) {
+      debugPrint("CHECKOUT ERROR: $error");
+      debugPrint("STACK TRACE: $stackTrace");
+
+      if (!mounted) return;
+
+      showTransactionResult(success: false, message: error.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isCheckoutLoading = false);
+      }
+    }
+  }
+
+  Future<bool> _isInvoicePaid(String invoiceNumber) async {
+    try {
+      final response = await ApiService.get(
+        "/product/invoice/${Uri.encodeComponent(invoiceNumber)}",
+      );
+
+      return response is Map && response["success"] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<String> _createMidtransPayment(String invoiceNumber) async {
+    final paymentResponse = await ApiService.post("/payment/create", {
+      "invoiceNumber": invoiceNumber,
+    });
+
+    if (!mounted) return "";
+
+    if (paymentResponse["success"] != true) {
+      throw Exception(
+        paymentResponse["message"] ?? "Gagal membuat pembayaran Midtrans",
+      );
+    }
+
+    final redirectUrl = paymentResponse["redirect_url"]?.toString();
+
+    if (redirectUrl == null || redirectUrl.trim().isEmpty) {
+      throw Exception("URL pembayaran Midtrans tidak ditemukan");
+    }
+
+    return redirectUrl;
+  }
+
+  Future<bool> _openMidtransCheckout(
+    String invoiceNumber,
+    String redirectUrl,
+  ) async {
+    if (!mounted) return false;
+
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => MidtransCheckoutPage(
+          redirectUrl: redirectUrl,
+          invoiceNumber: invoiceNumber,
+        ),
+      ),
+    );
+
+    return result == true;
+  }
+
+  Future<void> _completePendingPayment(String invoiceNumber) async {
+    if (!mounted) return;
+
+    setState(() {
+      _pendingInvoiceNumber = null;
+      _pendingRedirectUrl = null;
+    });
+
+    showTransactionResult(
+      success: true,
+      message: "Pembayaran non-tunai berhasil diproses.",
+    );
+
+    await _openInvoice(invoiceNumber);
+  }
+
+  // Melanjutkan pembayaran non-tunai yang sebelumnya belum selesai.
+  Future<void> _resumeMidtransPayment() async {
+    final invoiceNumber = _pendingInvoiceNumber;
+
+    if (invoiceNumber == null || _isCheckoutLoading) return;
+
+    setState(() => _isCheckoutLoading = true);
+
+    try {
+      // Notifikasi bisa saja sudah masuk sejak halaman ditutup.
+      if (await _isInvoicePaid(invoiceNumber)) {
+        await _completePendingPayment(invoiceNumber);
+        return;
+      }
+
+      if (!mounted) return;
+
+      // Gunakan kembali URL Snap yang sama agar tidak membuat order baru.
+      var redirectUrl = _pendingRedirectUrl;
+
+      if (redirectUrl == null) {
+        redirectUrl = await _createMidtransPayment(invoiceNumber);
+
+        if (!mounted) return;
+
+        setState(() => _pendingRedirectUrl = redirectUrl);
+      }
+
+      final paid = await _openMidtransCheckout(invoiceNumber, redirectUrl);
+
+      if (!mounted) return;
+
+      if (!paid) {
+        _showSnackBar("Pembayaran masih belum selesai.");
+        return;
+      }
+
+      await _completePendingPayment(invoiceNumber);
+    } catch (error, stackTrace) {
+      debugPrint("RESUME PAYMENT ERROR: $error");
+      debugPrint("STACK TRACE: $stackTrace");
+
+      if (!mounted) return;
+
+      // Jika error terjadi karena invoice sudah dibayar, anggap sukses.
+      if (await _isInvoicePaid(invoiceNumber)) {
+        await _completePendingPayment(invoiceNumber);
+        return;
+      }
 
       showTransactionResult(success: false, message: error.toString());
     } finally {
@@ -426,57 +608,47 @@ class _ScanerState extends State<Scaner> {
           title: const Text("Pembayaran Tunai"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text("Masukkan uang yang diberikan pembeli"),
+              Text("Total: ${formatRupiah(totalPrice)}"),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 15),
 
               TextField(
                 controller: _paidAmountController,
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  RupiahInputFormatter(),
-                ],
-                decoration: InputDecoration(
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                decoration: const InputDecoration(
+                  labelText: "Nominal pembayaran",
                   prefixText: "Rp ",
-                  hintText: "10.000",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  border: OutlineInputBorder(),
                 ),
               ),
             ],
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(dialogContext);
-              },
+              onPressed: () => Navigator.pop(dialogContext),
               child: const Text("Batal"),
             ),
-
             ElevatedButton(
               onPressed: () {
                 final paidAmount = _paidAmountController.text
-                    .replaceAll('.', '')
-                    .trim();
+                    .replaceAll(".", "")
+                    .replaceAll(",", "");
 
-                if (paidAmount.isEmpty ||
-                    int.tryParse(paidAmount) == null ||
-                    int.parse(paidAmount) <= 0) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("Masukkan nominal pembayaran yang valid"),
-                    ),
-                  );
+                final parsedPaidAmount = double.tryParse(paidAmount);
+
+                if (parsedPaidAmount == null || parsedPaidAmount < totalPrice) {
+                  _showSnackBar("Nominal pembayaran kurang!");
                   return;
                 }
 
                 Navigator.pop(dialogContext);
 
-                transaksi(paidAmount: paidAmount, paymentMethod: "tunai");
+                transaksi(
+                  paidAmount: paidAmount,
+                  paymentMethod: PaymentMethod.tunai,
+                );
               },
               child: const Text("Bayar"),
             ),
@@ -486,8 +658,46 @@ class _ScanerState extends State<Scaner> {
     );
   }
 
+  void showPaymentMethodDialog() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Metode Pembayaran"),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.money),
+                title: const Text("Tunai"),
+                subtitle: const Text("Pembayaran menggunakan uang tunai"),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+                  showPaymentDialog();
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.credit_card),
+                title: const Text("Non-Tunai"),
+                subtitle: const Text("Pembayaran melalui Midtrans"),
+                onTap: () {
+                  Navigator.pop(dialogContext);
+
+                  transaksi(
+                    paidAmount: _plainAmount(totalPrice),
+                    paymentMethod: PaymentMethod.midtrans,
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   void _handleBarcode(BarcodeCapture capture) {
-    if (!mounted || capture.barcodes.isEmpty) return;
+    if (!mounted || _isCheckoutLoading || capture.barcodes.isEmpty) return;
 
     final barcode = capture.barcodes.first;
     final code = barcode.rawValue;
@@ -798,12 +1008,52 @@ class _ScanerState extends State<Scaner> {
                     ],
                   ),
                   const SizedBox(height: 14),
+                  if (_pendingInvoiceNumber != null) ...[
+                    Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.orange.shade200),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Pembayaran non-tunai tertunda",
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "Invoice: $_pendingInvoiceNumber",
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Colors.black54,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: OutlinedButton.icon(
+                              onPressed: _isCheckoutLoading
+                                  ? null
+                                  : _resumeMidtransPayment,
+                              icon: const Icon(Icons.refresh, size: 18),
+                              label: const Text("Lanjutkan Pembayaran"),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: cart.isEmpty || _isCheckoutLoading
                           ? null
-                          : showPaymentDialog,
+                          : showPaymentMethodDialog,
                       child: _isCheckoutLoading
                           ? const CircularProgressIndicator()
                           : const Text("Lanjutkan Transaksi"),
