@@ -13,4 +13,5 @@ export const salesSchema = z.object({
   paidAmount: z.coerce.number().finite().positive(),
 
   paymentMethod: z.enum(["tunai", "non tunai"]),
+  status: z.enum(["selesai", "menunggu", "belum dibayar"]),
 });
