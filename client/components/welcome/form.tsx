@@ -1,5 +1,7 @@
+"use client"
+
 import React from "react"
-import { useForm, ValidationError } from "@formspree/react"
+import { useForm } from "@formspree/react"
 
 const ProductRequest = () => {
   const [state, handleSubmit] = useForm("meagryea")

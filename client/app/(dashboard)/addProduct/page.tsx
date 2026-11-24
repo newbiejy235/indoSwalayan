@@ -55,20 +55,15 @@ const AddProduct = () => {
   }, [])
 
   // Callback stabil untuk menangani hasil decoding QR Code
-  const onNewScanResult = useCallback(
-    (decodedText: string, decodedResult: any) => {
-      // 7. Hasil decoding ditampilkan melalui console.log()
+  const onNewScanResult = useCallback((decodedText: string) => {
+    setScannedCode(decodedText)
+    setProduct((prev) => ({
+      ...prev,
+      barcode: decodedText,
+    }))
 
-      setScannedCode(decodedText)
-      setProduct((prev) => ({
-        ...prev,
-        barcode: decodedText,
-      }))
-
-      toast.success("QR Code berhasil terbaca!")
-    },
-    []
-  )
+    toast.success("QR Code berhasil terbaca!")
+  }, [])
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

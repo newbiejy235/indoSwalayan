@@ -1,3 +1,5 @@
+"use client"
+
 import { formatRupiah } from "@/utils/product";
 import type { Product, StockStatus } from "@/utils/productType";
 

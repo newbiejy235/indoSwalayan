@@ -5,6 +5,7 @@ import api from "@/lib/api"
 import React, { useEffect, useState } from "react"
 import userData from "@/utils/userData"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 
 const Login = () => {
   const router = useRouter()
@@ -19,7 +20,7 @@ const Login = () => {
     if (data?.token) {
       router.push("/dashboard")
     }
-  })
+  }, [router])
 
   const loginHandler = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -58,11 +59,12 @@ const Login = () => {
       userData.save(emailUser, role, token)
 
       router.push("/dashboard")
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Login error:", error)
 
       setMessage(
-        error.response?.data?.message ||
+        (axios.isAxiosError(error) &&
+          (error.response?.data?.message as string | undefined)) ||
           "Terjadi kesalahan saat login. Coba lagi."
       )
     } finally {

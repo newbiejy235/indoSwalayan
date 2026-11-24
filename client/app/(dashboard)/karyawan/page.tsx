@@ -5,7 +5,6 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import api from "@/lib/api"
 import userData from "@/utils/userData"
-import Sidebar from "@/components/sidebar/sidebar"
 import { BookUser } from "lucide-react"
 
 interface Karyawan {

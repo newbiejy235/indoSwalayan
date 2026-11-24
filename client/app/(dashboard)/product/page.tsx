@@ -15,7 +15,7 @@ import {
 } from "lucide-react"
 
 import api from "@/lib/api"
-import EditProduct from "../editProduct/page"
+import EditProduct from "@/components/EditProduct"
 import userData from "@/utils/userData"
 import toast from "react-hot-toast"
 import Link from "next/link"

@@ -1,15 +1,7 @@
-import { usePathname } from "next/navigation"
-import { motion } from "framer-motion"
+"use client"
+
 import Image from "next/image"
-import {
-  House,
-  Package,
-  ShoppingCart,
-  ChartNoAxesCombined,
-  Info,
-  LogIn,
-  Search,
-} from "lucide-react"
+import { LogIn, Search } from "lucide-react"
 import Link from "next/link"
 
 const navItems = [
@@ -32,7 +24,6 @@ const navItems = [
 ]
 
 export default function Navbar() {
-  const pathname = usePathname()
   return (
     <>
       <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
@@ -53,10 +44,6 @@ export default function Navbar() {
             {/* Navigation */}
             <div className="hidden items-center gap-7 md:flex">
               {navItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== "/" && pathname.startsWith(item.href))
-
                 return (
                   <Link
                     key={item.href}

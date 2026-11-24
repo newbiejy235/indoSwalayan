@@ -1,8 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ArrowRight, ShoppingBasket } from "lucide-react"
-import GroceryStore3D from "./GroceryStore3D"
+import { ArrowRight } from "lucide-react"
 
 export default function Hero() {
   return (

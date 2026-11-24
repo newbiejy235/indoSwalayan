@@ -5,6 +5,7 @@ import {
   Html5Qrcode,
   Html5QrcodeScannerState,
   Html5QrcodeSupportedFormats,
+  type Html5QrcodeResult,
 } from "html5-qrcode"
 import {
   Camera,
@@ -34,7 +35,10 @@ export interface Html5QrcodePluginProps {
   fps?: number
   qrbox?: number | { width: number; height: number }
   aspectRatio?: number
-  qrCodeSuccessCallback: (decodedText: string, decodedResult: any) => void
+  qrCodeSuccessCallback: (
+    decodedText: string,
+    decodedResult: Html5QrcodeResult
+  ) => void
   qrCodeErrorCallback?: (errorMessage: string) => void
   autoStart?: boolean
   className?: string
@@ -57,8 +61,6 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
   // Generate a stable container ID that is identical on SSR and client hydration
   const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, "")
   const scannerId = id || `html5qr-code-${reactId}`
-  const scannerIdRef = useRef<string>(scannerId)
-  scannerIdRef.current = scannerId
 
   // Persistent references for scanner instance and lifecycle management
   const scannerRef = useRef<Html5Qrcode | null>(null)
@@ -231,15 +233,16 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
       if (isMountedRef.current) {
         setStatus("SCANNING")
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Gagal memulai scanner:", err)
       if (isMountedRef.current) {
         setStatus("ERROR")
-        const errStr = String(err?.message || err)
+        const errStr = err instanceof Error ? err.message : String(err)
+        const errName = err instanceof Error ? err.name : ""
         if (
           errStr.includes("NotAllowedError") ||
           errStr.includes("Permission") ||
-          err?.name === "NotAllowedError"
+          errName === "NotAllowedError"
         ) {
           setErrorMessage(
             "Izin kamera ditolak. Mohon izinkan akses kamera di pengaturan browser Anda."
@@ -247,7 +250,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
         } else if (
           errStr.includes("NotReadableError") ||
           errStr.includes("TrackStartError") ||
-          err?.name === "NotReadableError"
+          errName === "NotReadableError"
         ) {
           setErrorMessage(
             "Kamera sedang digunakan oleh aplikasi lain atau sistem operasi."
@@ -255,7 +258,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
         } else if (
           errStr.includes("NotFoundError") ||
           errStr.includes("DevicesNotFoundError") ||
-          err?.name === "NotFoundError"
+          errName === "NotFoundError"
         ) {
           setErrorMessage("Tidak ada kamera yang ditemukan pada perangkat ini.")
         } else {

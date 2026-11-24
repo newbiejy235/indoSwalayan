@@ -6,12 +6,14 @@ export type userData = {
 
 export class UserData {
   save = (email: string, role: string, token: string): void => {
+    if (typeof window === "undefined") return
     localStorage.setItem("email", email)
     localStorage.setItem("role", role)
     localStorage.setItem("token", token)
   }
 
   get = () => {
+    if (typeof window === "undefined") return null
     const email = localStorage.getItem("email")
     const role = localStorage.getItem("role")
     const token = localStorage.getItem("token")
@@ -24,10 +26,13 @@ export class UserData {
   }
 
   logout = (): void => {
+    if (typeof window === "undefined") return
     localStorage.removeItem("email")
     localStorage.removeItem("role")
     localStorage.removeItem("token")
   }
 }
 
-export default new UserData()
+const userData = new UserData()
+
+export default userData

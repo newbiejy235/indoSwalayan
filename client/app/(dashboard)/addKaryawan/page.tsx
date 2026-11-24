@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import axios from "axios"
 import api from "@/lib/api"
 import userData from "@/utils/userData"
-import Sidebar from "@/components/sidebar/sidebar"
 
 const TambahKaryawan = () => {
   const router = useRouter()
@@ -80,11 +80,12 @@ const TambahKaryawan = () => {
         phone_number: "",
         password: "",
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Gagal menambahkan karyawan:", err)
 
       setError(
-        err.response?.data?.message ||
+        (axios.isAxiosError(err) &&
+          (err.response?.data?.message as string | undefined)) ||
           "Terjadi kesalahan saat menambahkan karyawan."
       )
     } finally {

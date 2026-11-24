@@ -13,6 +13,7 @@ import {
 
 import userData from "@/utils/userData"
 import api from "@/lib/api"
+import axios from "axios"
 
 interface SalesStatistic {
   totalTransactions: number
@@ -49,8 +50,6 @@ const formatRupiah = (value: number) => {
 }
 
 const Dashboard = () => {
-  const data = userData.get()
-
   const router = useRouter()
 
   const [loading, setLoading] = useState(true)
@@ -74,6 +73,8 @@ const Dashboard = () => {
 
       const date = getToday()
       setToday(date)
+
+      const data = userData.get()
 
       const params = {
         startDate: date,
@@ -116,17 +117,22 @@ const Dashboard = () => {
       setPopularProducts(
         Array.isArray(popular.data.data) ? popular.data.data : []
       )
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Gagal mengambil statistik:", err)
 
-      setError("Gagal memuat statistik. Silakan coba lagi.")
+      setError(
+        (axios.isAxiosError(err) &&
+          (err.response?.data?.message as string | undefined)) ||
+          "Gagal memuat statistik. Silakan coba lagi."
+      )
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    if (!data?.token) {
+    const token = userData.get()?.token
+    if (!token) {
       router.replace("/")
       return
     }
