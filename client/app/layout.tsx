@@ -1,3 +1,4 @@
+"use client"
 import {
   Geist,
   Geist_Mono,
@@ -35,11 +36,29 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
+import { useEffect } from "react"
+import userData from "@/utils/userData"
+import { isTokenExpired } from "@/lib/authValidation"
+import { useRouter } from "next/navigation"
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const router = useRouter()
+  useEffect(() => {
+    const checkToken = async () => {
+      const user = await userData.get()
+
+      if (!user?.token || isTokenExpired(user.token)) {
+        localStorage.removeItem("user")
+        router.replace("/login")
+      }
+    }
+
+    checkToken()
+  }, [router])
   return (
     <html
       lang="id"

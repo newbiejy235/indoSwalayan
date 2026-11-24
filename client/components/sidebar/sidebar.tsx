@@ -1,12 +1,16 @@
 "use client"
 
-import { Box, Home, ScanLine } from "lucide-react"
+import { Box, Home, ScanLine, CircleArrowUpLeftExit } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import userData from "@/utils/userData"
 
 const Sidebar = () => {
   const pathname = usePathname()
+  const logoutHandler = async () => {
+    userData.logout()
+  }
 
   const menus = [
     {
@@ -67,6 +71,16 @@ const Sidebar = () => {
             </Link>
           )
         })}
+
+        <form onSubmit={logoutHandler}>
+          <button
+            type="submit"
+            className="flex min-w-40 items-center justify-center gap-3 rounded-2xl bg-red-600 p-2 text-white transition-all duration-200"
+          >
+            <CircleArrowUpLeftExit size={20} />
+            Logout
+          </button>
+        </form>
       </nav>
     </aside>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useCallback, useEffect, useRef, useState } from "react"
+import React, { useCallback, useEffect, useId, useRef, useState } from "react"
 import {
   Html5Qrcode,
   Html5QrcodeScannerState,
@@ -30,6 +30,7 @@ export type ScannerStatus =
   "IDLE" | "STARTING" | "SCANNING" | "SUCCESS" | "ERROR"
 
 export interface Html5QrcodePluginProps {
+  id?: string
   fps?: number
   qrbox?: number | { width: number; height: number }
   aspectRatio?: number
@@ -40,6 +41,7 @@ export interface Html5QrcodePluginProps {
 }
 
 const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
+  id,
   fps = 10,
   qrbox = 250,
   aspectRatio = 1.0,
@@ -52,10 +54,11 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
   const [errorMessage, setErrorMessage] = useState<string>("")
   const [lastDecodedText, setLastDecodedText] = useState<string | null>(null)
 
-  // Unique container ID per component instance to avoid DOM collisions
-  const scannerIdRef = useRef<string>(
-    `html5qr-code-${Math.random().toString(36).substring(2, 9)}`
-  )
+  // Generate a stable container ID that is identical on SSR and client hydration
+  const reactId = useId().replace(/[^a-zA-Z0-9_-]/g, "")
+  const scannerId = id || `html5qr-code-${reactId}`
+  const scannerIdRef = useRef<string>(scannerId)
+  scannerIdRef.current = scannerId
 
   // Persistent references for scanner instance and lifecycle management
   const scannerRef = useRef<Html5Qrcode | null>(null)
@@ -131,7 +134,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
   const startScannerInternal = useCallback(async () => {
     if (!isMountedRef.current) return
 
-    const container = document.getElementById(scannerIdRef.current)
+    const container = document.getElementById(scannerId)
     if (!container) {
       console.warn("Scanner DOM container not found.")
       return
@@ -153,7 +156,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
 
     // Create or reuse single Html5Qrcode instance
     if (!scannerRef.current) {
-      scannerRef.current = new Html5Qrcode(scannerIdRef.current, {
+      scannerRef.current = new Html5Qrcode(scannerId, {
         verbose: false,
         formatsToSupport
       })
@@ -263,7 +266,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
       isStartingRef.current = false
       startPromiseRef.current = null
     }
-  }, [fps, qrbox, aspectRatio])
+  }, [fps, qrbox, aspectRatio, scannerId])
 
   // Public actions with serialized queue
   const handleStart = useCallback(() => {
@@ -402,7 +405,7 @@ const Html5QrcodePlugin: React.FC<Html5QrcodePluginProps> = ({
       <div className="relative mx-auto mt-5 flex aspect-square w-full max-w-sm items-center justify-center overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-inner sm:max-w-md">
         {/* Target DOM Element for Html5Qrcode with CSS overrides to ensure single video preview */}
         <div
-          id={scannerIdRef.current}
+          id={scannerId}
           className="relative h-full w-full overflow-hidden [&_canvas]:!hidden [&_video]:!h-full [&_video]:!w-full [&_video]:!object-cover"
         />
 
