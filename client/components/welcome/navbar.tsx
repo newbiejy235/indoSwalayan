@@ -30,11 +30,15 @@ export default function Navbar() {
   }, []);
 
   return (
-    <header className="md:fixed flex w-full justify-center md:left-1/2 md:top-0 md:z-50 md:-translate-x-1/2">
-      <nav className="font-display flex items-center gap-5 rounded-b-[28px] bg-black px-6 py-4 text-white sm:gap-12 sm:px-14">
+    <header className="sticky top-0 z-50 flex w-full justify-center px-2 sm:px-4 md:fixed md:top-0 md:left-1/2 md:-translate-x-1/2">
+      <nav className="font-display flex max-w-full items-center justify-between gap-3 overflow-x-auto rounded-b-[24px] bg-black px-4 py-3 text-white sm:gap-8 sm:rounded-b-[28px] sm:px-10 sm:py-4 md:gap-12 md:px-14">
         {/* Taruh logo di /public/logo.png */}
-        <img src="/images/logoPutih2.png" alt="IndoSwalayan" className="h-10 w-auto" />
-        <ul className="flex items-center gap-4 text-sm font-medium sm:gap-10 sm:text-base">
+        <img
+          src="/images/logoPutih2.png"
+          alt="IndoSwalayan"
+          className="h-7 w-auto shrink-0 sm:h-10"
+        />
+        <ul className="flex items-center gap-3 whitespace-nowrap text-xs font-medium sm:gap-8 sm:text-sm md:gap-10 md:text-base">
           {links.map((link) => (
             <li key={link.id}>
               <a href={link.href} className="group relative inline-block py-1">

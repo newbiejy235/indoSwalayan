@@ -74,7 +74,7 @@ const Login = () => {
     <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-8 sm:px-6">
       <div className="flex w-full max-w-5xl flex-col items-center gap-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-xl sm:p-10 md:p-12 lg:flex-row lg:justify-center lg:gap-20 lg:p-16">
         {/* Logo */}
-        <div className="flex h-72 w-72 justify-center rounded-tr-[90px] rounded-bl-[90px] border border-blue-700">
+        <div className="flex h-56 w-56 max-w-full justify-center rounded-tr-[60px] rounded-bl-[60px] border border-blue-700 sm:h-72 sm:w-72 sm:rounded-tr-[90px] sm:rounded-bl-[90px]">
           <img
             src="/images/indoSwalayan2.png"
             alt="IndoSwalayan Logo"

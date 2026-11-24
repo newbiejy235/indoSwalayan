@@ -13,10 +13,10 @@ const socials = [
 
 export default function Hero() {
   return (
-    <section id="home" className="bg-[#EDE1B5] px-6 pb-24 pt-36 sm:px-12 lg:px-20">
-      <div className="mx-auto grid max-w-[1300px] items-center gap-12 lg:grid-cols-2">
+    <section id="home" className="bg-[#EDE1B5] px-4 pb-16 pt-24 sm:px-12 sm:pb-24 sm:pt-36 lg:px-20">
+      <div className="mx-auto grid max-w-[1300px] items-center gap-8 sm:gap-12 lg:grid-cols-2">
         <div>
-          <h1 className="font-display text-4xl font-medium leading-[1.5] sm:text-5xl">
+          <h1 className="font-display text-3xl font-medium leading-[1.3] sm:text-4xl sm:leading-[1.4] md:text-5xl">
             Belanja Mudah
             <br />
             <span className="relative inline-block">

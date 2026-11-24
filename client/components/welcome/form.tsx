@@ -10,26 +10,26 @@ const ProductRequest = () => {
   return (
     <section
       id="contact"
-      className="w-full rounded-2xl bg-[#EDE1B5] px-8 py-10 md:px-14"
+      className="w-full rounded-2xl bg-[#EDE1B5] px-4 py-8 sm:px-8 sm:py-10 md:px-14"
     >
-      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-10 md:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl grid-cols-1 items-center gap-8 md:grid-cols-2 md:gap-10">
         {/* Informasi */}
         <div className="space-y-4">
-          <span className="text-sm font-semibold tracking-widest text-[#8B7136] uppercase">
+          <span className="text-xs sm:text-sm font-semibold tracking-widest text-[#8B7136] uppercase">
             Product Request
           </span>
 
-          <h2 className="text-3xl leading-tight font-bold text-[#3C3320] md:text-4xl">
+          <h2 className="text-2xl sm:text-3xl leading-tight font-bold text-[#3C3320] md:text-4xl">
             Barang yang kamu cari belum tersedia?
           </h2>
 
-          <p className="max-w-md leading-relaxed text-[#665B40]">
+          <p className="max-w-md text-sm sm:text-base leading-relaxed text-[#665B40]">
             Jangan khawatir! Kamu bisa mengajukan permintaan pengadaan barang
             yang sedang kamu butuhkan. Kami akan berusaha menyediakan produk
             pilihanmu agar pengalaman belanjamu semakin lengkap.
           </p>
 
-          <div className="flex items-center gap-2 text-sm text-[#8B7136]">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-[#8B7136]">
             <span>✦</span>
             <p>Permintaanmu akan ditinjau langsung oleh pihak toko.</p>
           </div>
@@ -38,7 +38,7 @@ const ProductRequest = () => {
         {/* Form */}
         <form
           onSubmit={handleSubmit}
-          className="space-y-5 rounded-xl bg-white p-6 shadow-sm md:p-8"
+          className="space-y-5 rounded-xl bg-white p-4 sm:p-6 shadow-sm md:p-8"
         >
           <div>
             <h3 className="text-xl font-bold text-[#3C3320]">

@@ -16,7 +16,13 @@ router.post(
 
 router.get("/", Product.getAllProduct);
 
-router.patch("/:id", authenticate, isOwner, Product.editProduct);
+router.patch(
+  "/:id",
+  authenticate,
+  isOwner,
+  productUpload.single("image"),
+  Product.editProduct,
+);
 
 // kasir
 
