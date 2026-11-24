@@ -20,17 +20,17 @@ export default function ProductGrid({ products, loading, error, onRetry }: Props
   }, [products, query]);
 
   return (
-    <section id="product" className="mx-auto max-w-[1300px] px-4 pb-28 pt-16 sm:px-12">
+    <section id="product" className="mx-auto max-w-[1300px] px-4 pb-20 pt-12 sm:px-12 sm:pb-28 sm:pt-16">
       <input
         type="search"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Cari produk berdasarkan nama.."
         aria-label="Cari produk berdasarkan nama"
-        className="font-body w-full max-w-[520px] rounded-xl bg-black px-6 py-3.5 text-white placeholder:font-light placeholder:text-white/60 outline-none transition-shadow focus:ring-4 focus:ring-[#EEBE20]"
+        className="font-body w-full max-w-[520px] rounded-xl bg-black px-4 py-3 sm:px-6 sm:py-3.5 text-white placeholder:font-light placeholder:text-white/60 outline-none transition-shadow focus:ring-4 focus:ring-[#EEBE20]"
       />
 
-      <div className="mt-12 grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-8 sm:mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 sm:gap-8 lg:gap-10">
         {loading &&
           Array.from({ length: 8 }).map((_, i) => (
             <div key={i} className="aspect-square animate-pulse rounded-[32px] bg-[#EDE1B5]" />

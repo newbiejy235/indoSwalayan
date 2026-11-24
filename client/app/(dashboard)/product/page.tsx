@@ -69,7 +69,6 @@ const Products = () => {
   const deleteHandler = async (id: number) => {
     const idProducts = data.filter((items) => items.id === id)
     const result = idProducts[0]
-    console.log(result)
 
     toast.custom((t) => (
       <div className="w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-xl">
@@ -282,7 +281,7 @@ const Products = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-5 md:p-8">
+    <div className="min-h-screen w-full min-w-0 bg-[#f8fafc] p-4 sm:p-6 md:p-8">
       {/* HEADER */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -297,7 +296,10 @@ const Products = () => {
           </p>
         </div>
 
-        <Link href={"/addProduct"} className="flex items-center justify-center gap-2 rounded-xl bg-[#15803d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800">
+        <Link
+          href={"/addProduct"}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#15803d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
+        >
           <Plus size={18} />
           Tambah Produk
         </Link>
@@ -501,7 +503,7 @@ const Products = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-2">
                           <button
-                            onClick={() => pluStock(product.id)}    
+                            onClick={() => pluStock(product.id)}
                             title="Tambah stock"
                             className="flex items-center gap-1 rounded-lg bg-blue-100 p-2 text-gray-400 transition hover:bg-blue-200 hover:text-blue-600"
                           >

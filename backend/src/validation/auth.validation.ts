@@ -12,7 +12,7 @@ export const kasirSchema = z.object({
   last_name: z.string().min(1, "nama minimal 1 karakter"),
   email: z.email(),
   password: z.string().min(6),
-  phone_number : z.string().min(13, "minimal 13 karakter")
+  phone_number : z.string().min(12, "minimal 12 karakter")
 });
 
 export const loginSchema = z.object({

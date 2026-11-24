@@ -72,10 +72,9 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
         return
       }
 
-      console.log("FORM DATA:")
-      formData.forEach((value, key) => {
-        console.log(key, value)
-      })
+      // formData.forEach((value, key) => {
+      //   console.log(key, value)
+      // })
 
       const result = await api.patch(`/product/${id}`, formData, {
         headers: {
@@ -104,11 +103,11 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 backdrop-blur-sm sm:p-4">
       {/* MODAL */}
       <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         {/* HEADER */}
-        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 p-5">
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-100 p-4 sm:p-5">
           <div className="flex items-center gap-3">
             <div className="rounded-xl bg-orange-100 p-2.5 text-orange-600">
               <Package size={22} />
@@ -197,27 +196,6 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
               />
             </div>
 
-            {/* STOK */}
-            <div>
-              <label className="mb-2 block text-sm font-medium text-gray-700">
-                Stok
-              </label>
-
-              <input
-                type="number"
-                min="0"
-                value={form.stock}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    stock: e.target.value,
-                  })
-                }
-                required
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
-              />
-            </div>
-
             {/* STATUS PRODUK */}
             <div>
               <label className="mb-2 block text-sm font-medium text-gray-700">
@@ -281,7 +259,7 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
           </div>
 
           {/* FOOTER - FIXED */}
-          <div className="flex shrink-0 justify-end gap-3 border-t border-gray-100 bg-white p-5">
+          <div className="flex shrink-0 flex-wrap justify-end gap-2.5 border-t border-gray-100 bg-white p-4 sm:gap-3 sm:p-5">
             <button
               type="button"
               onClick={onClose}

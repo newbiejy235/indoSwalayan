@@ -20,8 +20,6 @@ const invoiceNumber = (): string => {
 
 export class Product {
   createProduct = async (req: AuthRequest, res: Response) => {
-    console.log("CREATE PRODUCT TERPANGGIL");
-    console.log("USER:", req.user);
     let uploadedPublicId: string | undefined;
     try {
       const isOwner = req.user?.role;
@@ -127,8 +125,6 @@ export class Product {
 
   editProduct = async (req: AuthRequest, res: Response) => {
     try {
-      console.log("tes");
-
       const productId = Number(req.params.id);
 
       if (!Number.isInteger(productId) || productId <= 0) {

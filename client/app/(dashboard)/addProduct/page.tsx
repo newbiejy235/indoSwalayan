@@ -54,14 +54,10 @@ const AddProduct = () => {
     getUsers()
   }, [])
 
-  console.log(scannedCode)
-
   // Callback stabil untuk menangani hasil decoding QR Code
   const onNewScanResult = useCallback(
     (decodedText: string, decodedResult: any) => {
       // 7. Hasil decoding ditampilkan melalui console.log()
-      console.log("QR Code:", decodedText)
-      console.log("Result:", decodedResult)
 
       setScannedCode(decodedText)
       setProduct((prev) => ({
@@ -115,11 +111,6 @@ const AddProduct = () => {
       formData.append("stock", String(product.stock))
       formData.append("image", image)
 
-      console.log("data produk", product)
-      console.log("data form", formData)
-      console.log(user);
-      
-
       const response = await api.post("/product/tambah", formData, {
         headers: {
           Authorization: `Bearer ${user?.token}`,
@@ -139,7 +130,6 @@ const AddProduct = () => {
 
         setImage(null)
         setScannedCode(null)
-        console.log(response)
       }
     } catch (error) {
       console.error("ADD PRODUCT ERROR:", error)
@@ -166,7 +156,7 @@ const AddProduct = () => {
   }
 
   return (
-    <div className="min-h-screen flex-1 bg-[#f8fafc] p-5 md:p-8">
+    <div className="min-h-screen w-full min-w-0 flex-1 bg-[#f8fafc] p-4 sm:p-6 md:p-8">
       {/* Navigation & Header */}
       <div className="mb-6">
         <Link
@@ -285,12 +275,10 @@ const AddProduct = () => {
               </li>
               <li>
                 Arahkan kamera ke QR Code produk hingga berada tepat di dalam
-                area bidik (viewfinder).
+                area bidik.
               </li>
               <li>
-                Setelah berhasil terbaca, kode akan dicetak pada konsol
-                developer (<code>console.log</code>) dan scanner dihentikan
-                sementara.
+                Setelah berhasil terbaca, kode akan ditampilkan di form.
               </li>
               <li>
                 Gunakan tombol <strong>Scan Ulang</strong> untuk membaca kode

@@ -93,8 +93,8 @@ const TambahKaryawan = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="p-5 md:ml-64 md:p-8">
+    <div className="min-h-screen w-full min-w-0 bg-gray-50">
+      <main className="p-4 sm:p-6 md:p-8">
         {/* Header */}
         <div className="mb-8">
           <Link

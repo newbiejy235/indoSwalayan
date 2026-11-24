@@ -158,13 +158,6 @@ export const handleNotification = async (req: Request, res: Response) => {
         and(eq(sales.invoiceNumber, order_id), eq(sales.status, "menunggu")),
       );
 
-    console.log({
-      order_id,
-      transaction_status,
-      fraud_status,
-      saleStatus,
-    });
-
     return res.status(200).json({
       success: true,
       message: "Notification berhasil diproses",

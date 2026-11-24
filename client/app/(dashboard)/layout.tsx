@@ -28,9 +28,9 @@ export default function RootLayout({
     >
       <body className="font-[family-name:var(--font-jakarta)]">
         <ThemeProvider>
-          <div className="flex">
+          <div className="flex min-h-screen w-full flex-col md:flex-row">
             <Sidebar />
-            {children}
+            <div className="min-w-0 flex-1 w-full">{children}</div>
             <Toaster position="top-center" />
           </div>
         </ThemeProvider>
