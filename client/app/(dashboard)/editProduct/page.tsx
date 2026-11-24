@@ -14,7 +14,6 @@ type Product = {
   price: string
   stock: number
   imageUrl: string
-  isActive: boolean
 }
 
 type EditProductProps = {
@@ -29,7 +28,6 @@ type EditForm = {
   description: string
   stock: string
   price: string
-  isActive: boolean
 }
 
 const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
@@ -43,7 +41,6 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
     description: product?.description ?? "",
     stock: String(product?.stock ?? 0),
     price: product?.price ?? "",
-    isActive: product?.isActive ?? true,
   })
 
   const [loading, setLoading] = useState(false)
@@ -61,6 +58,9 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
       const users = await userData.get()
       const formData = new FormData()
 
+      formData.append("name", form.name)
+      formData.append("description", form.description)
+      formData.append("price", form.price)
       // Hanya kirim field yang benar-benar ingin diperbarui.
       if (imageFile) {
         formData.append("image", imageFile)
@@ -201,20 +201,6 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
               <label className="mb-2 block text-sm font-medium text-gray-700">
                 Status Produk
               </label>
-
-              <select
-                value={String(form.isActive)}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    isActive: e.target.value === "true",
-                  })
-                }
-                className="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:border-green-600 focus:ring-2 focus:ring-green-100"
-              >
-                <option value="true">Aktif</option>
-                <option value="false">Tidak Aktif</option>
-              </select>
             </div>
 
             {/* GAMBAR PRODUK */}
