@@ -18,6 +18,7 @@ import api from "@/lib/api"
 import EditProduct from "../editProduct/page"
 import userData from "@/utils/userData"
 import toast from "react-hot-toast"
+import Link from "next/link"
 
 type Product = {
   id: number
@@ -296,10 +297,10 @@ const Products = () => {
           </p>
         </div>
 
-        <button className="flex items-center justify-center gap-2 rounded-xl bg-[#15803d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800">
+        <Link href={"/addProduct"} className="flex items-center justify-center gap-2 rounded-xl bg-[#15803d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800">
           <Plus size={18} />
           Tambah Produk
-        </button>
+        </Link>
       </div>
 
       {/* STATISTICS */}
