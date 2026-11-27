@@ -157,7 +157,7 @@ export class Authentication {
   kasirRegister = async (req: AuthRequest, res: Response) => {
     try {
       const isOwner = req.user?.role;
-      if (!isOwner) {
+      if (isOwner !== "pemilik") {
         return res.status(403).json({
           success: false,
           message: "anda tidak memiliki akses",

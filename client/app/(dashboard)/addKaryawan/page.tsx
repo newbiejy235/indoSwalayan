@@ -223,7 +223,7 @@ const TambahKaryawan = () => {
             {/* Actions */}
             <div className="flex flex-col-reverse justify-end gap-3 border-t border-gray-100 pt-5 sm:flex-row">
               <Link
-                href="/dashboard/karyawan"
+                href="/karyawan"
                 className="rounded-xl border border-gray-200 px-5 py-3 text-center text-sm font-semibold text-gray-600 transition hover:bg-gray-50"
               >
                 Batal
