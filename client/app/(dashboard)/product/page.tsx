@@ -137,21 +137,21 @@ const Products = () => {
     toast.custom((t) => (
       <div className="w-[350px] rounded-xl border border-gray-200 bg-white p-5 shadow-xl">
         <h3 className="text-lg font-semibold text-gray-900">
-          Tambah Stok Produk
+          add product quantity
         </h3>
 
         <p className="mt-2 text-sm text-gray-500">
-          Produk:{" "}
+          Product:{" "}
           <span className="font-semibold text-gray-800">{result.name}</span>
         </p>
 
         <p className="mt-1 text-sm text-gray-500">
-          Stok saat ini: {result.stock}
+          Current stock: {result.stock}
         </p>
 
         <div className="mt-4">
           <label className="mb-2 block text-sm font-medium text-gray-700">
-            Jumlah stok yang ingin ditambahkan
+            Amount of stock
           </label>
 
           <input
@@ -171,7 +171,7 @@ const Products = () => {
             onClick={() => toast.dismiss(t.id)}
             className="rounded-lg bg-gray-100 px-4 py-2 text-sm hover:bg-gray-200"
           >
-            Batal
+            cancelled
           </button>
 
           <button
@@ -216,7 +216,7 @@ const Products = () => {
             }}
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
           >
-            Tambahkan
+            Add
           </button>
         </div>
       </div>
@@ -285,10 +285,8 @@ const Products = () => {
       {/* HEADER */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-sm text-gray-400">Dashboard / Produk</p>
-
           <h1 className="mt-1 text-2xl font-bold text-gray-900">
-            Manajemen Produk
+            Products Management
           </h1>
 
           <p className="mt-1 text-sm text-gray-500">
@@ -301,7 +299,7 @@ const Products = () => {
           className="flex items-center justify-center gap-2 rounded-xl bg-[#15803d] px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-green-800"
         >
           <Plus size={18} />
-          Tambah Produk
+          Add new product
         </Link>
       </div>
 
@@ -337,7 +335,7 @@ const Products = () => {
         {/* TABLE HEADER */}
         <div className="flex flex-col gap-4 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h2 className="font-bold text-gray-900">Daftar Produk</h2>
+            <h2 className="font-bold text-gray-900">Product List</h2>
 
             <p className="mt-1 text-xs text-gray-400">
               Kelola seluruh produk yang tersedia di toko.
@@ -371,7 +369,7 @@ const Products = () => {
               <select
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                className="bg-transparent py-2.5 text-sm outline-none"
+                className="bg-white py-2.5 text-sm outline-none"
               >
                 <option value="all">Semua Stok</option>
                 <option value="available">Tersedia</option>
@@ -390,10 +388,10 @@ const Products = () => {
                 <th className="px-6 py-4">Produk</th>
                 <th className="px-6 py-4">SKU</th>
                 <th className="px-6 py-4">Barcode</th>
-                <th className="px-6 py-4">Harga</th>
-                <th className="px-6 py-4">Stok</th>
+                <th className="px-6 py-4">Price</th>
+                <th className="px-6 py-4">Stock</th>
                 <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-center">Aksi</th>
+                <th className="px-6 py-4 text-center">Manage</th>
               </tr>
             </thead>
 

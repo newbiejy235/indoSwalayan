@@ -270,7 +270,7 @@ const Dashboard = () => {
               <div className="flex items-center gap-2">
                 <TrendingUp className="text-green-600" size={20} />
                 <h2 className="text-lg font-bold text-gray-900">
-                  Produk Paling Laku
+                  Best Selling Products
                 </h2>
               </div>
               <p className="mt-1 text-sm text-gray-400">

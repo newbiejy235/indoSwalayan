@@ -251,7 +251,7 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
               disabled={loading}
               className="rounded-xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
             >
-              Batal
+              cancelled
             </button>
 
             <button
@@ -265,7 +265,7 @@ const EditProduct = ({ id, data, onClose, onSuccess }: EditProductProps) => {
                 <Save size={17} />
               )}
 
-              {loading ? "Menyimpan..." : "Simpan Perubahan"}
+              {loading ? "Saving..." : "Save"}
             </button>
           </div>
         </form>

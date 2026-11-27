@@ -38,7 +38,7 @@ export default function Hero() {
             className="font-display group relative mt-12 inline-flex items-center gap-4 overflow-hidden rounded-full bg-black px-7 py-3 text-md font-medium text-white transition-all duration-300 hover:-translate-y-0.5 hover:text-black hover:shadow-[0_10px_20px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] sm:text-xl"
           >
             <span className="absolute inset-0 origin-left scale-x-0 bg-[#EEBE20] transition-transform duration-500 ease-out group-hover:scale-x-100" />
-            <span className="relative text-xs">Jelajahi produk!!</span>
+            <span className="relative text-xs">Lets explore!!</span>
             <FontAwesomeIcon
               icon={faArrowRight}
               className="relative transition-transform duration-300 group-hover:translate-x-1.5"

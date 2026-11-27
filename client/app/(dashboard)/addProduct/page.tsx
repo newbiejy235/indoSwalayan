@@ -164,11 +164,9 @@ const AddProduct = () => {
 
         <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold tracking-wider text-gray-400 uppercase">
-              Dashboard / Produk / Tambah
-            </p>
+          
             <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
-              Tambah Produk
+              Add new product
             </h1>
             <p className="mt-1 text-sm text-gray-500">
               Pindai QR code produk untuk membaca kode barang secara otomatis.
@@ -183,7 +181,7 @@ const AddProduct = () => {
           >
             <QrCode size={18} className="text-emerald-700" />
             <span>
-              {isScannerOpen ? "Sembunyikan Scanner" : "Buka Scanner QR"}
+              {isScannerOpen ? "Hide Scaner" : "Open Scanner "}
             </span>
             {isScannerOpen ? (
               <ChevronUp size={16} />

@@ -19,6 +19,7 @@ const Login = () => {
     const data = userData.get()
     if (data?.token) {
       router.push("/dashboard")
+      console.log(data)
     }
   }, [router])
 

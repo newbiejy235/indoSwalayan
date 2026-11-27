@@ -1,14 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { Box, Home, ScanLine, Menu, X } from "lucide-react"
+import { Box, Home, ScanLine, Menu, X, Power, Undo2 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
+import { Button } from "../ui/button"
+import userData from "@/utils/userData"
+import { useRouter } from "next/navigation"
 
 const Sidebar = () => {
+  const router = useRouter()
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
+
+  const logoutHandler = async () => {
+    userData.logout()
+    router.replace("/")
+  }
 
   const menus = [
     {
@@ -25,6 +34,11 @@ const Sidebar = () => {
       name: "Product",
       href: "/product",
       icon: Box,
+    },
+    {
+      name: "back to home",
+      href: "/",
+      icon: Undo2,
     },
   ]
 
@@ -116,11 +130,21 @@ const Sidebar = () => {
               </Link>
             )
           })}
+          <Button
+            onClick={logoutHandler}
+            className={
+              "mt-auto mb-10 bg-red-500 text-white hover:cursor-pointer hover:bg-red-400"
+            }
+            variant={"default"}
+          >
+            <Power size={18} />
+            Logout
+          </Button>
         </nav>
       </div>
 
       {/* Desktop Persistent Sidebar */}
-      <aside className="hidden min-h-screen w-56 shrink-0 flex-col items-center border-r border-slate-200 bg-white md:flex">
+      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col items-center border-r border-slate-200 bg-white md:flex">
         <Image
           className="h-40 w-40 object-contain"
           src="/images/indoSwalayan2.png"
@@ -130,7 +154,7 @@ const Sidebar = () => {
           priority
         />
 
-        <nav className="mt-10 flex w-full flex-col space-y-5 px-4">
+        <nav className="mt-10 flex w-full flex-1 flex-col space-y-5 px-4">
           {menus.map((menu) => {
             const isActive =
               pathname === menu.href || pathname.startsWith(`${menu.href}/`)
@@ -161,6 +185,17 @@ const Sidebar = () => {
               </Link>
             )
           })}
+
+          <Button
+            onClick={logoutHandler}
+            className={
+              "mt-auto mb-10 bg-red-500 text-white hover:cursor-pointer hover:bg-red-400"
+            }
+            variant={"default"}
+          >
+            <Power size={18} />
+            Logout
+          </Button>
         </nav>
       </aside>
     </>

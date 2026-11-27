@@ -1,5 +1,6 @@
 import Sidebar from "@/components/sidebar/sidebar"
 import { Toaster } from "react-hot-toast"
+import AuthHandler from "@/components/authHandler"
 
 export default function DashboardLayout({
   children,
@@ -11,6 +12,7 @@ export default function DashboardLayout({
       <Sidebar />
       <div className="w-full min-w-0 flex-1">{children}</div>
       <Toaster position="top-center" />
+      <AuthHandler />
     </div>
   )
 }

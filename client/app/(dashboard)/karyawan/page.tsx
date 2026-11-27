@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import api from "@/lib/api"
 import userData from "@/utils/userData"
-import { BookUser } from "lucide-react"
+import { BookUser, Plus } from "lucide-react"
 
 interface Karyawan {
   code: string
@@ -41,7 +41,6 @@ const DashboardKaryawan = () => {
 
         // Mengambil data dari response API
         const result = response.data.data
-       
 
         setKaryawan(Array.isArray(result) ? result : [])
       } catch (err) {
@@ -74,7 +73,7 @@ const DashboardKaryawan = () => {
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Data Karyawan</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Employee Data</h1>
             <p className="mt-1 text-sm text-gray-500">
               Kelola dan pantau seluruh data karyawan IndoSwalayan.
             </p>
@@ -82,9 +81,10 @@ const DashboardKaryawan = () => {
 
           <Link
             href="/addKaryawan"
-            className="rounded-xl flex items-center justify-center bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
+            className="flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-blue-700"
           >
-            + Tambah Karyawan
+            <Plus size={18} />
+            Add new employee
           </Link>
         </div>
 
@@ -110,7 +110,7 @@ const DashboardKaryawan = () => {
         <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
           <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="font-bold text-gray-900">Daftar Karyawan</h2>
+              <h2 className="font-bold text-gray-900">Employee List </h2>
               <p className="mt-1 text-xs text-gray-500">
                 Informasi seluruh karyawan yang terdaftar.
               </p>

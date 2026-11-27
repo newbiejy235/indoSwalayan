@@ -1,4 +1,4 @@
-export type userData = {
+export type userDataType = {
   email: string
   role: string
   token: string
