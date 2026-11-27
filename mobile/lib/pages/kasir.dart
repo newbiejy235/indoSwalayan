@@ -926,12 +926,12 @@ class _ScanerState extends State<Scaner> {
               child: Row(
                 children: [
                   const Text(
-                    "Keranjang Belanja",
+                    "shopping cart",
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
                   ),
                   const Spacer(),
                   Text(
-                    "$totalQuantity barang",
+                    "$totalQuantity product",
                     style: const TextStyle(
                       color: Colors.black54,
                       fontWeight: FontWeight.w600,
@@ -948,7 +948,7 @@ class _ScanerState extends State<Scaner> {
               child: cart.isEmpty
                   ? const Center(
                       child: Text(
-                        "Belum ada produk di keranjang",
+                        "cart still empty, go scan product",
                         style: TextStyle(color: Colors.black45),
                       ),
                     )
@@ -980,18 +980,18 @@ class _ScanerState extends State<Scaner> {
                   Row(
                     children: [
                       const Text(
-                        "Total barang",
+                        "Total product",
                         style: TextStyle(color: Colors.black54),
                       ),
                       const Spacer(),
-                      Text("$totalQuantity barang"),
+                      Text("$totalQuantity product"),
                     ],
                   ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
                       const Text(
-                        "Total pembayaran",
+                        "Total ",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -1041,7 +1041,7 @@ class _ScanerState extends State<Scaner> {
                                   ? null
                                   : _resumeMidtransPayment,
                               icon: const Icon(Icons.refresh, size: 18),
-                              label: const Text("Lanjutkan Pembayaran"),
+                              label: const Text("Continue"),
                             ),
                           ),
                         ],
@@ -1056,7 +1056,7 @@ class _ScanerState extends State<Scaner> {
                           : showPaymentMethodDialog,
                       child: _isCheckoutLoading
                           ? const CircularProgressIndicator()
-                          : const Text("Lanjutkan Transaksi"),
+                          : const Text("continue"),
                     ),
                   ),
                 ],
