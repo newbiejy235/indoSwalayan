@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:mobile/pages/kasir.dart';
 import 'package:mobile/service/api.dart';
 
@@ -28,18 +29,39 @@ class _LoginPageState extends State<LoginPage> {
 
     if (!mounted) return;
 
-    // Jika token sudah ada dan tidak kosong, langsung pindah ke KasirPage
-    if (token != null && token.isNotEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const KasirPage()),
-      );
-    } else {
-      // Jika tidak ada token, tampilkan form login seperti biasa
+    // Tidak ada token
+    if (token == null || token.isEmpty) {
       setState(() {
         cekSesi = false;
       });
+      return;
     }
+
+    // Cek apakah token sudah expired
+    bool expired;
+
+    try {
+      expired = JwtDecoder.isExpired(token);
+    } catch (_) {
+      expired = true;
+    }
+
+    if (expired) {
+      await ApiService.logout();
+
+      if (!mounted) return;
+
+      setState(() {
+        cekSesi = false;
+      });
+      return;
+    }
+
+    // Token masih valid
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const KasirPage()),
+    );
   }
 
   Future<void> login() async {
@@ -85,7 +107,6 @@ class _LoginPageState extends State<LoginPage> {
         return;
       }
       await ApiService.saveUserData(res["userData"]);
-    
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
