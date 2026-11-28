@@ -1,90 +1,111 @@
-"use client";
+"use client"
 
-import { useRef, useState } from "react";
-import { formatRupiah } from "@/utils/product";
-import type { Product } from "@/utils/productType";
+import Image from "next/image"
+import { useEffect, useState } from "react"
 
-/**
- * Isi gambar sendiri di sini (urut dari kiri ke kanan), contoh:
- * ["/showcase-1.jpg", "/showcase-2.jpg", "/showcase-3.jpg", "/showcase-4.jpg"]
- * Kalau kosong, otomatis pakai foto produk dari API.
- * Deskripsi + nama di caption selalu diambil dari API (produk ke-1 s/d ke-4).
- */
-const SHOWCASE_IMAGES: string[] = [];
+const slides = [
+  {
+    id: 1,
+    image: "/images/minum.jpg",
+    title: "Yuk, temukan produk favoritmu di indoSwalayan!",
+    description: "Temukan berbagai kebutuhan harian dengan mudah.",
+  },
+  {
+    id: 2,
+    image: "/images/sayur.jpg",
+    title: "Belanja kebutuhan harian jadi lebih mudah!",
+    description: "Semua kebutuhanmu tersedia dalam satu tempat.",
+  },
+  {
+    id: 3,
+    image: "/images/buah.jpg",
+    title: "Produk berkualitas, harga bersahabat!",
+    description: "Nikmati pengalaman belanja yang nyaman bersama kami.",
+  },
+]
 
-interface Props {
-  products: Product[];
-  loading: boolean;
-}
+export default function HeroCarousel() {
+  const [activeIndex, setActiveIndex] = useState(0)
+  const [isPaused, setIsPaused] = useState(false)
 
-export default function ShowcaseBanner({ products, loading }: Props) {
-  const [open, setOpen] = useState(false);
-  const lastPointer = useRef<string>("mouse");
-  const items = products.slice(0, 4);
+  useEffect(() => {
+    if (isPaused) return
+
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => (prev + 1) % slides.length)
+    }, 5000)
+
+    return () => clearInterval(interval)
+  }, [isPaused])
 
   return (
-    <section className="mx-auto max-w-[1300px] px-4 pt-10 sm:px-12">
+    <section className="w-full px-4 py-6 md:px-8">
       <div
-        tabIndex={0}
-        role="group"
-        aria-label="Produk pilihan"
-        onPointerDown={(e) => (lastPointer.current = e.pointerType)}
-        onPointerEnter={(e) => e.pointerType === "mouse" && setOpen(true)}
-        onPointerLeave={(e) => e.pointerType === "mouse" && setOpen(false)}
-        onClick={() => lastPointer.current !== "mouse" && setOpen((o) => !o)}
-        onFocus={() => setOpen(true)}
-        onBlur={() => setOpen(false)}
-        className="flex flex-col overflow-hidden rounded-[40px] bg-[#EDE1B5] outline-none focus-visible:ring-4 focus-visible:ring-[#EEBE20] md:h-[460px] md:flex-row"
+        className="relative mx-auto max-w-[1800px] overflow-hidden rounded-[32px] bg-[#EFE3B5]"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
-        {/* Panel gambar: melebar ke arah teks saat hover */}
+        {/* Carousel Track */}
         <div
-          className={`flex h-[280px] w-full shrink-0 transition-[width] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] md:h-full ${
-            open ? "md:w-[calc(100%-250px)]" : "md:w-[62%]"
-          }`}
+          className="flex transition-transform duration-1000 ease-in-out"
+          style={{
+            transform: `translateX(-${activeIndex * 100}%)`,
+          }}
         >
-          {loading || items.length === 0
-            ? Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex-1 animate-pulse bg-black/10" />
-              ))
-            : items.map((p, i) => {
-                const src = SHOWCASE_IMAGES[i] || p.image;
-                return (
-                  <div
-                    key={p.id}
-                    className="group/strip relative min-w-0 flex-[1_1_0%] overflow-hidden bg-black/10 transition-[flex-grow] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] md:hover:flex-[2.6_1_0%]"
-                  >
-                    {src && <img src={src} alt={p.name} className="h-full w-full object-cover" />}
+          {slides.map((slide) => (
+            <div
+              key={slide.id}
+              className="grid min-w-full grid-cols-1 items-center gap-8 p-6 md:grid-cols-[1.7fr_0.8fr] md:gap-12 md:px-12 md:py-14 lg:px-[8.5%]"
+            >
+              {/* Image */}
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[28px]">
+                <Image
+                  src={slide.image}
+                  alt={slide.title}
+                  fill
+                  priority={slide.id === 1}
+                  sizes="(max-width: 768px) 100vw, 60vw"
+                  className="object-cover"
+                />
+              </div>
 
-                    <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden translate-y-3 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-4 pb-4 pt-12 text-white opacity-0 transition-all duration-500 md:block md:group-hover/strip:translate-y-0 md:group-hover/strip:opacity-100 md:group-hover/strip:delay-200">
-                      <div className="min-w-[200px]">
-                        <p className="font-display text-base font-semibold leading-tight">{p.name}</p>
-                        <p className="font-body mt-0.5 text-sm text-[#EEBE20]">{formatRupiah(p.price)}</p>
-                        {p.description && (
-                          <p className="font-body mt-1.5 line-clamp-3 text-xs font-light leading-relaxed text-white/90">
-                            {p.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {/* Text */}
+              <div className="flex flex-col justify-center py-4 md:py-0">
+                <h1 className="max-w-[500px] text-3xl leading-[1.35] font-bold tracking-tight text-black md:text-4xl lg:text-[42px]">
+                  {slide.title}
+                </h1>
+
+                <p className="mt-4 max-w-[420px] text-sm leading-relaxed text-black/60 md:text-base">
+                  {slide.description}
+                </p>
+
+                {/* Yellow Accent */}
+                <div className="mt-5 flex items-center gap-6">
+                  <div className="h-[10px] w-full max-w-[300px] rounded-full bg-[#F4C21B]" />
+                  <div className="h-[10px] w-[10px] shrink-0 rounded-full bg-[#F4C21B]" />
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
 
-        <div className="flex min-w-[250px] flex-1 flex-col justify-center p-8 md:p-10">
-          <h2 className="font-display text-2xl font-semibold leading-snug sm:text-3xl">
-            Yuk, temukan
-            <br />
-            produk favoritmu
-            <br />
-            di IndoSwalayan!
-          </h2>
-          <div className="mt-2 flex items-center gap-3">
-            <span className="h-[6px] w-[85%] rounded-full bg-[#EEBE20]" />
-            <span className="h-2 w-2 rounded-full bg-[#EEBE20]" />
-          </div>
+        {/* Indicators */}
+        <div className="absolute bottom-5 left-1/2 flex -translate-x-1/2 items-center gap-2 md:bottom-6">
+          {slides.map((slide, index) => (
+            <button
+              key={slide.id}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={activeIndex === index ? "true" : undefined}
+              onClick={() => setActiveIndex(index)}
+              className={`h-2.5 rounded-full transition-all duration-500 ${
+                activeIndex === index
+                  ? "w-9 bg-[#DDAE00]"
+                  : "w-2.5 bg-black/20 hover:bg-black/40"
+              }`}
+            />
+          ))}
         </div>
       </div>
     </section>
-  );
+  )
 }

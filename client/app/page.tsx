@@ -6,16 +6,18 @@ import Navbar from "@/components/welcome/navbar"
 import ProductGrid from "@/components/welcome/search"
 import { useProducts } from "@/utils/productHandler"
 import ProductRequest from "@/components/welcome/form"
+import HeroCarousel from "@/components/welcome/banner"
 
 export default function HomePage() {
   const { products, loading, error, reload } = useProducts()
 
   return (
-    <>
+    <div className="bg-[#E9D58E]">
       <Navbar />
       <main>
         <Hero />
-      
+        <HeroCarousel />
+
         <ProductGrid
           products={products}
           loading={loading}
@@ -23,8 +25,8 @@ export default function HomePage() {
           onRetry={reload}
         />
       </main>
-      <ProductRequest/>
+      <ProductRequest />
       <Footer />
-    </>
+    </div>
   )
 }
