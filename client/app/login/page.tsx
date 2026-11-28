@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react"
 import userData from "@/utils/userData"
 import { useRouter } from "next/navigation"
 import axios from "axios"
+import { isTokenExpired } from "@/utils/token.vaalidation"
 
 const Login = () => {
   const router = useRouter()
@@ -17,7 +18,7 @@ const Login = () => {
 
   useEffect(() => {
     const data = userData.get()
-    if (data?.token) {
+    if (data?.token && !isTokenExpired(data.token)) {
       router.push("/dashboard")
       console.log(data)
     }
